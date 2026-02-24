@@ -152,6 +152,19 @@ const Usuarios = () => {
                 </div>
               )}
 
+              {usuario.role !== 'admin' && usuario.role !== 'manager' && usuario.secciones && usuario.secciones.length > 0 && (
+                <div className="usuario-areas" style={{ marginTop: '8px' }}>
+                  <strong>Vistas:</strong>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                    {usuario.secciones.map((s) => (
+                      <span key={s} className="badge user" style={{ fontSize: '11px' }}>
+                        {s.replace('_', ' ')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {usuario.diasLaborales && (
                 <div className="usuario-schedule">
                   <strong>Horario Semanal:</strong>
@@ -187,14 +200,36 @@ const Usuarios = () => {
   );
 };
 
+const SECCIONES_DISPONIBLES = [
+  { key: 'calendario_grupal', label: 'Calendario Grupal' },
+  { key: 'redes', label: 'Calendario Redes' },
+  { key: 'tareas', label: 'Tareas' },
+  { key: 'objetivos', label: 'Objetivos' },
+  { key: 'pauta', label: 'Pauta' },
+  { key: 'metricas', label: 'Métricas' },
+  { key: 'producto', label: 'Producto' },
+  { key: 'visual', label: 'Visual' },
+];
+
+const DEFAULT_SECCIONES_POR_ROL = {
+  user: ['calendario_grupal', 'redes', 'tareas', 'objetivos', 'metricas'],
+  producto: ['calendario_grupal', 'producto', 'visual'],
+  visual: ['calendario_grupal', 'producto', 'visual'],
+  locales: ['calendario_grupal', 'producto', 'visual'],
+};
+
 const UsuarioModal = ({ onClose, usuario }) => {
   const [formData, setFormData] = useState(
-    usuario || {
+    usuario ? {
+      ...usuario,
+      secciones: usuario.secciones ?? (DEFAULT_SECCIONES_POR_ROL[usuario.role] || [])
+    } : {
       username: '',
       password: '',
       name: '',
       role: 'user',
       areas: [''],
+      secciones: [],
       partTime: false,
       active: true,
       diasLaborales: {
@@ -209,6 +244,14 @@ const UsuarioModal = ({ onClose, usuario }) => {
     }
   );
   const [loading, setLoading] = useState(false);
+
+  const toggleSeccion = (key) => {
+    const current = formData.secciones || [];
+    const updated = current.includes(key)
+      ? current.filter(s => s !== key)
+      : [...current, key];
+    setFormData({ ...formData, secciones: updated });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -380,6 +423,26 @@ const UsuarioModal = ({ onClose, usuario }) => {
               Usuario activo
             </label>
           </div>
+
+          {formData.role !== 'admin' && formData.role !== 'manager' && (
+            <div className="form-group">
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600 }}>
+                Vistas habilitadas
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {SECCIONES_DISPONIBLES.map(({ key, label }) => (
+                  <label key={key} className="checkbox-label" style={{ cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={(formData.secciones || []).includes(key)}
+                      onChange={() => toggleSeccion(key)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600 }}>

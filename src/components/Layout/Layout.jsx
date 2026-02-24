@@ -20,12 +20,19 @@ import './Layout.css';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { userData, logout, isAdmin, isManager, isProducto, isVisual, isLocales } = useAuth();
-  const username = userData?.username;
-  const PAUTA_USERS = ['sofia', 'cami', 'vicky', 'juli'];
+  const { userData, logout, isAdmin, isManager } = useAuth();
 
-  // Roles del portal de Producto/Visual (NO ven marketing)
-  const isNewRole = isProducto || isVisual || isLocales;
+  // Secciones por defecto según rol (para usuarios sin secciones configuradas)
+  const DEFAULT_SECCIONES = {
+    user: ['calendario_grupal', 'redes', 'tareas', 'objetivos', 'metricas'],
+    producto: ['calendario_grupal', 'producto', 'visual'],
+    visual: ['calendario_grupal', 'producto', 'visual'],
+    locales: ['calendario_grupal', 'producto', 'visual'],
+  };
+  const seccionesConfiguradas = userData?.secciones !== undefined;
+  const userSecciones = seccionesConfiguradas
+    ? (userData?.secciones || [])
+    : (DEFAULT_SECCIONES[userData?.role] || []);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,36 +45,34 @@ const Layout = () => {
   const menuItems = [
     { path: '/', icon: FiHome, label: 'Inicio', access: 'all' },
     { path: '/calendario', icon: FiCalendar, label: 'Calendario Grupal', access: 'calendario_grupal' },
-    { path: '/redes', icon: FiInstagram, label: 'Calendario Redes', access: 'marketing' },
-    { path: '/tareas', icon: FiCheckSquare, label: 'Tareas', access: 'marketing_edit' },
-    { path: '/objetivos', icon: FiTarget, label: 'Objetivos', access: 'marketing_edit' },
+    { path: '/redes', icon: FiInstagram, label: 'Calendario Redes', access: 'redes' },
+    { path: '/tareas', icon: FiCheckSquare, label: 'Tareas', access: 'tareas' },
+    { path: '/objetivos', icon: FiTarget, label: 'Objetivos', access: 'objetivos' },
     { path: '/pauta', icon: FiRadio, label: 'Pauta', access: 'pauta' },
-    { path: '/metricas', icon: FiBarChart2, label: 'Métricas', access: 'marketing' },
-    { path: '/producto', icon: FiPackage, label: 'Producto', access: 'producto_portal' },
-    { path: '/visual', icon: FiCamera, label: 'Visual', access: 'visual_portal' },
+    { path: '/metricas', icon: FiBarChart2, label: 'Métricas', access: 'metricas' },
+    { path: '/producto', icon: FiPackage, label: 'Producto', access: 'producto' },
+    { path: '/visual', icon: FiCamera, label: 'Visual', access: 'visual' },
     { path: '/usuarios', icon: FiUsers, label: 'Usuarios', access: 'admin' },
   ];
 
   const filteredMenu = menuItems.filter(item => {
-    switch (item.access) {
-      case 'all':             return true;
-      case 'admin':           return isAdmin;
-      case 'calendario_grupal': return isAdmin || isManager || !isNewRole || isVisual || isProducto;
-      case 'marketing':       return isAdmin || isManager || !isNewRole;
-      case 'marketing_edit':  return isAdmin || (!isManager && !isNewRole);
-      case 'pauta':           return PAUTA_USERS.includes(username);
-      case 'producto_portal': return isAdmin || isManager || isProducto || isVisual || isLocales;
-      case 'visual_portal':   return isAdmin || isManager || isVisual || isLocales;
-      default:                return true;
+    if (item.access === 'all') return true;
+    if (item.access === 'admin') return isAdmin;
+    if (isAdmin) return true;
+    if (item.access === 'tareas' || item.access === 'objetivos') {
+      return !isManager && userSecciones.includes(item.access);
     }
+    if (isManager) return item.access !== 'pauta';
+    return userSecciones.includes(item.access);
   });
 
   const rolLabel = () => {
     if (isAdmin) return 'Admin';
     if (isManager) return 'Dirección';
-    if (isProducto) return 'Producto';
-    if (isVisual) return 'Visual';
-    if (isLocales) return 'Locales';
+    const role = userData?.role;
+    if (role === 'producto') return 'Producto';
+    if (role === 'visual') return 'Visual';
+    if (role === 'locales') return 'Locales';
     return 'Usuario';
   };
 
