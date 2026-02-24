@@ -1,0 +1,622 @@
+.calendario-container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.calendario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.calendario-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #353434;
+  margin-bottom: 4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vista-selector {
+  display: flex;
+  background: white;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.vista-selector button {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.vista-selector button.active {
+  background: #462829;
+  color: white;
+}
+
+.vista-selector button:hover:not(.active) {
+  background: #f5f5f5;
+}
+
+.week-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  background: white;
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.week-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.week-info h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #353434;
+  text-transform: capitalize;
+}
+
+.btn-today {
+  padding: 8px 16px;
+  background: #e6d7b3;
+  color: #462829;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-today:hover {
+  background: #462829;
+  color: white;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 16px;
+}
+
+.week-day {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 2px solid #f0f0f0;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s;
+}
+
+.week-day.today {
+  border-color: #462829;
+  background: linear-gradient(to bottom, #fffbf5, white);
+}
+
+.day-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.day-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.day-date {
+  font-size: 24px;
+  font-weight: 700;
+  color: #353434;
+}
+
+.day-date.today-number {
+  background: #462829;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-eventos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  overflow-y: auto;
+}
+
+.no-eventos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: #ccc;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.evento-card {
+  background: #f8f8f8;
+  border-left: 4px solid;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.evento-card:hover {
+  background: #f0f0f0;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.evento-card.readonly {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.evento-card.readonly:hover {
+  transform: none;
+  background: #f8f8f8;
+  box-shadow: none;
+}
+
+.evento-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.evento-card:hover .evento-delete-btn {
+  opacity: 1;
+}
+
+.evento-delete-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.evento-content {
+  flex: 1;
+  cursor: pointer;
+}
+
+.evento-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.evento-icon svg {
+  font-size: 16px;
+}
+
+.evento-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.evento-titulo {
+  font-weight: 600;
+  font-size: 13px;
+  color: #353434;
+  margin-bottom: 4px;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.evento-readonly-badge {
+  font-size: 11px;
+}
+
+.evento-hora,
+.evento-participantes,
+.evento-has-notes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.evento-has-notes {
+  color: #462829;
+  font-weight: 600;
+}
+
+.evento-hora svg,
+.evento-participantes svg {
+  font-size: 12px;
+}
+
+.add-evento-btn {
+  width: 100%;
+  padding: 10px;
+  background: white;
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  color: #999;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.add-evento-btn:hover {
+  border-color: #462829;
+  color: #462829;
+  background: #fffbf5;
+}
+
+/* Estilos del modal */
+.tipos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.tipo-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 2px solid;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tipo-button svg {
+  font-size: 16px;
+}
+
+.participantes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.participante-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8f8f8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: #353434;
+}
+
+.participante-checkbox:hover {
+  background: #e6d7b3;
+}
+
+.participante-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.participante-checkbox input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* VISTA MENSUAL */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #e0e0e0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.month-header-row {
+  display: contents;
+}
+
+.month-header-day {
+  background: #462829;
+  color: white;
+  padding: 12px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.month-day {
+  background: white;
+  min-height: 120px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.month-day:hover {
+  background: #fffbf5;
+}
+
+.month-day.empty {
+  background: #f5f5f5;
+  cursor: default;
+}
+
+.month-day.empty:hover {
+  background: #f5f5f5;
+}
+
+.month-day.today {
+  background: linear-gradient(to bottom, #e6d7b3, white);
+}
+
+.month-day-number {
+  font-weight: 700;
+  font-size: 16px;
+  color: #353434;
+  margin-bottom: 6px;
+}
+
+.month-day-eventos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.month-evento-badge {
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s;
+}
+
+.month-evento-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.month-evento-more {
+  font-size: 10px;
+  color: #666;
+  font-weight: 600;
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* VISTA ANUAL */
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.year-month-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 2px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.year-month-card:hover {
+  border-color: #462829;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.year-month-header {
+  font-size: 20px;
+  font-weight: 700;
+  color: #353434;
+  text-transform: capitalize;
+  margin-bottom: 12px;
+}
+
+.year-month-count {
+  font-size: 32px;
+  font-weight: 700;
+  color: #462829;
+  margin-bottom: 16px;
+}
+
+.year-month-tipos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.year-tipo-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.year-tipo-badge svg {
+  font-size: 14px;
+}
+
+/* Modal adicional */
+.alert-info {
+  background: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #1976d2;
+  font-size: 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.delete-confirm span {
+  font-weight: 600;
+  color: #d32f2f;
+}
+
+.btn-danger-confirm {
+  background: #d32f2f;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger-confirm:hover {
+  background: #b71c1c;
+}
+
+.btn-danger-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tipo-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1400px) {
+  .week-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .week-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .year-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .calendario-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .header-actions {
+    width: 100%;
+  }
+  
+  .vista-selector {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .week-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .week-controls {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .tipos-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .participantes-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .year-grid {
+    grid-template-columns: 1fr;
+  }
+}

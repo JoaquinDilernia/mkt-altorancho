@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crear Usuario Admin - Marketing Altorancho</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #353434 0%, #462829 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #353434;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+    
+    p {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 16px;
+      background: #462829;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    button:hover {
+      background: #353434;
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .message {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    
+    .message.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+    
+    .message.error {
+      background: #fee;
+      color: #c33;
+      border: 1px solid #ef4444;
+    }
+    
+    .info {
+      background: #f0f9ff;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border-left: 4px solid #3b82f6;
+    }
+    
+    .info strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #353434;
+    }
+    
+    .credentials {
+      font-family: 'Courier New', monospace;
+      background: #f5f5f5;
+      padding: 8px;
+      border-radius: 6px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Inicializar Base de Datos</h1>
+    <p>Crear usuario administrador para el sistema de Marketing</p>
+    
+    <div class="info">
+      <strong>Credenciales del Admin:</strong>
+      <div class="credentials">
+        Usuario: <strong>sofia</strong><br>
+        Contraseña: <strong>altolett123</strong>
+      </div>
+    </div>
+    
+    <button id="createBtn" onclick="createAdmin()">Crear Usuario Admin</button>
+    
+    <div id="message"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA3hK_dngP0EX1goxTYupHZCDWYHFHKKAI",
+      authDomain: "pedidos-lett-2.firebaseapp.com",
+      projectId: "pedidos-lett-2",
+      storageBucket: "pedidos-lett-2.appspot.com",
+      messagingSenderId: "459720672669",
+      appId: "1:459720672669:web:9cdbd5329a4cc1c7219b74"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.createAdmin = async function() {
+      const btn = document.getElementById('createBtn');
+      const messageDiv = document.getElementById('message');
+      
+      btn.disabled = true;
+      btn.textContent = 'Creando...';
+      messageDiv.innerHTML = '';
+      
+      try {
+        const docRef = await addDoc(collection(db, 'marketingar_users'), {
+          username: 'sofia',
+          password: 'altolett123',
+          name: 'Sofi',
+          role: 'admin',
+          areas: ['Coordinación Marketing'],
+          partTime: false,
+          active: true,
+          createdAt: new Date()
+        });
+        
+        messageDiv.innerHTML = `
+          <div class="message success">
+            ✅ Usuario admin creado exitosamente!<br>
+            <small>ID: ${docRef.id}</small><br><br>
+            <strong>Ahora podés ir a <a href="/" style="color: #065f46; text-decoration: underline;">http://localhost:5173</a> e iniciar sesión</strong>
+          </div>
+        `;
+        btn.textContent = '✓ Usuario Creado';
+      } catch (error) {
+        console.error('Error:', error);
+        messageDiv.innerHTML = `
+          <div class="message error">
+            ❌ Error: ${error.message}<br>
+            <small>${error.code}</small>
+          </div>
+        `;
+        btn.disabled = false;
+        btn.textContent = 'Reintentar';
+      }
+    };
+  </script>
+</body>
+</html>

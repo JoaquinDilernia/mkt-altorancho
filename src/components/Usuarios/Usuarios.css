@@ -1,0 +1,297 @@
+.usuarios-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.usuarios-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.usuarios-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #353434;
+  margin-bottom: 4px;
+}
+
+.usuarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.usuario-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 2px solid #f0f0f0;
+  transition: all 0.3s;
+}
+
+.usuario-card:hover {
+  border-color: #e6d7b3;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+}
+
+.usuario-card.inactive {
+  opacity: 0.6;
+  background: #fafafa;
+}
+
+.usuario-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.usuario-avatar-large {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #462829, #353434);
+  color: #e6d7b3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.usuario-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-icon.danger {
+  color: #ef4444;
+}
+
+.btn-icon.danger:hover {
+  background: #fee;
+  color: #dc2626;
+}
+
+.usuario-card-body h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #353434;
+  margin-bottom: 4px;
+}
+
+.usuario-username {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  font-family: 'Courier New', monospace;
+}
+
+.usuario-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.badge.admin {
+  background: #462829;
+  color: white;
+}
+
+.badge.user {
+  background: #3b82f6;
+  color: white;
+}
+
+.badge.parttime {
+  background: #f59e0b;
+  color: white;
+}
+
+.badge.inactive-badge {
+  background: #6b7280;
+  color: white;
+}
+
+.usuario-areas {
+  font-size: 14px;
+  color: #555;
+}
+
+.usuario-areas strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #353434;
+  font-size: 13px;
+}
+
+.usuario-areas ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.usuario-areas li {
+  padding: 4px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.usuario-areas li:before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #e6d7b3;
+  font-weight: bold;
+}
+
+.area-input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.area-input-group input {
+  flex: 1;
+}
+
+.btn-remove-area {
+  background: #fee;
+  color: #ef4444;
+  border: none;
+  width: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-remove-area:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-add-area {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #f0f9ff;
+  border: 2px dashed #3b82f6;
+  border-radius: 8px;
+  color: #3b82f6;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-add-area:hover {
+  background: #3b82f6;
+  color: white;
+  border-style: solid;
+}
+
+.usuario-schedule {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.usuario-schedule strong {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.schedule-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.schedule-badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.schedule-badge.oficina {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.schedule-badge.home {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.dias-laborales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  background: #f8f8f8;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.dia-laboral-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dia-laboral-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #353434;
+  text-transform: capitalize;
+}
+
+.dia-laboral-select {
+  padding: 8px 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dia-laboral-select:hover {
+  border-color: #462829;
+}
+
+.dia-laboral-select:focus {
+  outline: none;
+  border-color: #462829;
+  box-shadow: 0 0 0 3px rgba(70, 40, 41, 0.1);
+}
+
+@media (max-width: 768px) {
+  .usuarios-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .usuarios-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dias-laborales-grid {
+    grid-template-columns: 1fr;
+  }
+}

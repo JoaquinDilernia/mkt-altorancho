@@ -1,0 +1,284 @@
+.metricas-container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.metricas-header {
+  margin-bottom: 32px;
+}
+
+.metricas-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #353434;
+  margin-bottom: 4px;
+}
+
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card-large {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 2px solid #f0f0f0;
+  transition: all 0.3s;
+}
+
+.stat-card-large:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: #e6d7b3;
+}
+
+.stat-icon-large {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value-large {
+  font-size: 36px;
+  font-weight: 700;
+  color: #353434;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.stat-subtitle {
+  font-size: 12px;
+  color: #999;
+}
+
+.section-card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.section-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #353434;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-header h2 svg {
+  color: #462829;
+}
+
+.usuarios-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 20px;
+}
+
+.usuario-metrica-card {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #f0f0f0;
+  transition: all 0.3s;
+}
+
+.usuario-metrica-card:hover {
+  border-color: #e6d7b3;
+  background: white;
+}
+
+.usuario-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.usuario-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e6d7b3;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.usuario-nombre {
+  font-size: 16px;
+  font-weight: 700;
+  color: #353434;
+}
+
+.usuario-area {
+  font-size: 13px;
+  color: #666;
+}
+
+.metricas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metrica-item {
+  text-align: center;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+.metrica-item.success {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.metrica-item.warning {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.metrica-item.danger {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.metrica-valor {
+  font-size: 24px;
+  font-weight: 700;
+  color: #353434;
+  margin-bottom: 4px;
+}
+
+.metrica-label {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.tasa-completado {
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+}
+
+.tasa-completado strong {
+  color: #353434;
+  font-size: 15px;
+}
+
+.contenidos-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.contenido-stat {
+  text-align: center;
+  padding: 24px;
+  background: #f8f8f8;
+  border-radius: 12px;
+  border: 2px solid #e0e0e0;
+}
+
+.contenido-stat.success {
+  background: #f0fdf4;
+  border-color: #10b981;
+}
+
+.contenido-stat.warning {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.contenido-stat.info {
+  background: #f0f9ff;
+  border-color: #3b82f6;
+}
+
+.contenido-stat-number {
+  font-size: 40px;
+  font-weight: 700;
+  color: #353434;
+  margin-bottom: 8px;
+}
+
+.contenido-stat-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 600;
+}
+
+@media (max-width: 1200px) {
+  .usuarios-metricas {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-overview {
+    grid-template-columns: 1fr;
+  }
+  
+  .metricas-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .contenidos-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
