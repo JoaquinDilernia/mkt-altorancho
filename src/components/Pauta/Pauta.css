@@ -192,6 +192,45 @@
   white-space: nowrap;
 }
 
+.campana-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campana-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-icon-sm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: #f0f0f0;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-icon-sm:hover {
+  background: #e0e0e0;
+  color: #222;
+}
+
+.btn-icon-sm.danger {
+  color: #dc3545;
+}
+
+.btn-icon-sm.danger:hover {
+  background: #dc3545;
+  color: white;
+}
+
 .campana-desc {
   font-size: 13px;
   color: #666;

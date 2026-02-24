@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,7 +7,8 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   FiPlus, FiX, FiDollarSign, FiBarChart2, FiCalendar,
-  FiLock, FiCheckCircle, FiImage, FiFileText, FiCheck
+  FiLock, FiCheckCircle, FiImage, FiFileText, FiCheck,
+  FiEdit2, FiTrash2
 } from 'react-icons/fi';
 import './Pauta.css';
 
@@ -41,6 +42,7 @@ const Pauta = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [showNuevaCampana, setShowNuevaCampana] = useState(false);
   const [campanaActiva, setCampanaActiva] = useState(null);
+  const [campanaEditando, setCampanaEditando] = useState(null);
 
   const canSeeCampanas = PAUTA_TASKS_USERS.includes(username);
   const canSeeStats = PAUTA_STATS_USERS.includes(username);
@@ -125,6 +127,30 @@ const Pauta = () => {
     } catch (e) {
       console.error(e);
       alert('Error al crear campaña');
+    }
+  };
+
+  const handleEliminarCampana = async (campanaId) => {
+    if (!window.confirm('¿Seguro que querés eliminar esta campaña? Esta acción no se puede deshacer.')) return;
+    try {
+      await deleteDoc(doc(db, 'marketingar_pauta_campanas', campanaId));
+    } catch (e) {
+      console.error(e);
+      alert('Error al eliminar campaña');
+    }
+  };
+
+  const handleEditarCampana = async (campanaId, formData) => {
+    try {
+      await updateDoc(doc(db, 'marketingar_pauta_campanas', campanaId), {
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        contenido: formData.contenido,
+      });
+      setCampanaEditando(null);
+    } catch (e) {
+      console.error(e);
+      alert('Error al editar campaña');
     }
   };
 
@@ -263,9 +289,29 @@ const Pauta = () => {
                   >
                     <div className="campana-top">
                       <span className="campana-nombre">{c.nombre}</span>
-                      <span className="campana-estado" style={{ background: estado.color }}>
-                        {estado.label}
-                      </span>
+                      <div className="campana-top-right">
+                        <span className="campana-estado" style={{ background: estado.color }}>
+                          {estado.label}
+                        </span>
+                        {canCreateCampana && (
+                          <div className="campana-actions">
+                            <button
+                              className="btn-icon-sm"
+                              title="Editar campaña"
+                              onClick={() => setCampanaEditando(c)}
+                            >
+                              <FiEdit2 size={14} />
+                            </button>
+                            <button
+                              className="btn-icon-sm danger"
+                              title="Eliminar campaña"
+                              onClick={() => handleEliminarCampana(c.id)}
+                            >
+                              <FiTrash2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {c.descripcion && <p className="campana-desc">{c.descripcion}</p>}
@@ -353,6 +399,13 @@ const Pauta = () => {
             username={username}
             onClose={() => setCampanaActiva(null)}
             onAvanzar={handleAvanzarEstado}
+          />
+        )}
+        {campanaEditando && (
+          <EditarCampanaModal
+            campana={campanaEditando}
+            onClose={() => setCampanaEditando(null)}
+            onEditar={handleEditarCampana}
           />
         )}
       </AnimatePresence>
@@ -674,6 +727,75 @@ const NuevaCampanaModal = ({ onClose, onCreate, mes }) => {
           <div className="modal-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
             <button type="submit" className="btn-primary">Crear Campaña</button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ─── Editar Campaña Modal ─────────────────────────────────────────────────────
+const EditarCampanaModal = ({ campana, onClose, onEditar }) => {
+  const [form, setForm] = useState({
+    nombre: campana.nombre || '',
+    descripcion: campana.descripcion || '',
+    contenido: campana.contenido || '',
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.nombre || !form.contenido) {
+      alert('Completá el nombre y el contenido a subir');
+      return;
+    }
+    onEditar(campana.id, form);
+  };
+
+  return (
+    <motion.div
+      className="modal-overlay"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="modal-content"
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <h2><FiEdit2 /> Editar Campaña</h2>
+          <button className="btn-icon" onClick={onClose}><FiX /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label>Nombre de la campaña *</label>
+            <input
+              type="text"
+              value={form.nombre}
+              onChange={e => setForm({ ...form, nombre: e.target.value })}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Descripción / Objetivo</label>
+            <textarea
+              value={form.descripcion}
+              onChange={e => setForm({ ...form, descripcion: e.target.value })}
+              rows={3}
+            />
+          </div>
+          <div className="form-group">
+            <label>Contenido a subir *</label>
+            <textarea
+              value={form.contenido}
+              onChange={e => setForm({ ...form, contenido: e.target.value })}
+              rows={4}
+              required
+            />
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn-primary">Guardar cambios</button>
           </div>
         </form>
       </motion.div>

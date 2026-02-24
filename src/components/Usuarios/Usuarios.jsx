@@ -125,8 +125,13 @@ const Usuarios = () => {
               <div className="usuario-username">@{usuario.username}</div>
               
               <div className="usuario-badges">
-                <span className={`badge ${usuario.role === 'admin' ? 'admin' : 'user'}`}>
-                  {usuario.role === 'admin' ? 'Administrador' : 'Usuario'}
+                <span className={`badge ${usuario.role === 'admin' ? 'admin' : usuario.role === 'manager' ? 'manager' : 'user'}`}>
+                  {usuario.role === 'admin' ? 'Administrador' :
+                   usuario.role === 'manager' ? 'Dirección' :
+                   usuario.role === 'producto' ? 'Producto' :
+                   usuario.role === 'visual' ? 'Visual' :
+                   usuario.role === 'locales' ? 'Locales' :
+                   'Usuario'}
                 </span>
                 {usuario.partTime && (
                   <span className="badge parttime">Part Time</span>
@@ -319,6 +324,10 @@ const UsuarioModal = ({ onClose, usuario }) => {
                 required
               >
                 <option value="user">Usuario</option>
+                <option value="manager">Dirección</option>
+                <option value="producto">Producto</option>
+                <option value="visual">Visual</option>
+                <option value="locales">Locales</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>

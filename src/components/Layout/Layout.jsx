@@ -22,7 +22,7 @@ const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { userData, logout, isAdmin, isManager, isProducto, isVisual, isLocales } = useAuth();
   const username = userData?.username;
-  const PAUTA_USERS = ['sofia', 'cami', 'vicky', 'juli', 'santiago ribatto'];
+  const PAUTA_USERS = ['sofia', 'cami', 'vicky', 'juli'];
 
   // Roles del portal de Producto/Visual (NO ven marketing)
   const isNewRole = isProducto || isVisual || isLocales;
@@ -37,7 +37,7 @@ const Layout = () => {
 
   const menuItems = [
     { path: '/', icon: FiHome, label: 'Inicio', access: 'all' },
-    { path: '/calendario', icon: FiCalendar, label: 'Calendario Grupal', access: 'marketing' },
+    { path: '/calendario', icon: FiCalendar, label: 'Calendario Grupal', access: 'calendario_grupal' },
     { path: '/redes', icon: FiInstagram, label: 'Calendario Redes', access: 'marketing' },
     { path: '/tareas', icon: FiCheckSquare, label: 'Tareas', access: 'marketing_edit' },
     { path: '/objetivos', icon: FiTarget, label: 'Objetivos', access: 'marketing_edit' },
@@ -50,14 +50,15 @@ const Layout = () => {
 
   const filteredMenu = menuItems.filter(item => {
     switch (item.access) {
-      case 'all':         return true;
-      case 'admin':       return isAdmin;
-      case 'marketing':   return isAdmin || isManager || !isNewRole;
-      case 'marketing_edit': return isAdmin || (!isManager && !isNewRole);
-      case 'pauta':       return PAUTA_USERS.includes(username);
+      case 'all':             return true;
+      case 'admin':           return isAdmin;
+      case 'calendario_grupal': return isAdmin || isManager || !isNewRole || isVisual || isProducto;
+      case 'marketing':       return isAdmin || isManager || !isNewRole;
+      case 'marketing_edit':  return isAdmin || (!isManager && !isNewRole);
+      case 'pauta':           return PAUTA_USERS.includes(username);
       case 'producto_portal': return isAdmin || isManager || isProducto || isVisual || isLocales;
       case 'visual_portal':   return isAdmin || isManager || isVisual || isLocales;
-      default:            return true;
+      default:                return true;
     }
   });
 
