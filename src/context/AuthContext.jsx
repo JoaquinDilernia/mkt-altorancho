@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { collection, query, where, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 const AuthContext = createContext();
@@ -13,14 +13,28 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const unsubscribeRef = useRef(null);
+
+  const startListening = (userId) => {
+    if (unsubscribeRef.current) unsubscribeRef.current();
+    unsubscribeRef.current = onSnapshot(doc(db, 'marketingar_users', userId), (snap) => {
+      if (snap.exists()) {
+        const updated = { id: snap.id, ...snap.data() };
+        localStorage.setItem('marketingar_user', JSON.stringify(updated));
+        setUser(updated);
+      }
+    });
+  };
 
   useEffect(() => {
-    // Verificar si hay sesión guardada
     const savedUser = localStorage.getItem('marketingar_user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const parsed = JSON.parse(savedUser);
+      setUser(parsed);
+      startListening(parsed.id);
     }
     setLoading(false);
+    return () => { if (unsubscribeRef.current) unsubscribeRef.current(); };
   }, []);
 
   const login = async (username, password) => {
@@ -57,6 +71,7 @@ export const AuthProvider = ({ children }) => {
       // Guardar en localStorage
       localStorage.setItem('marketingar_user', JSON.stringify(userData));
       setUser(userData);
+      startListening(userData.id);
       
       return { success: true };
     } catch (error) {
@@ -66,6 +81,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    if (unsubscribeRef.current) unsubscribeRef.current();
+    unsubscribeRef.current = null;
     localStorage.removeItem('marketingar_user');
     setUser(null);
   };
