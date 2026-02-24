@@ -211,18 +211,11 @@ const SECCIONES_DISPONIBLES = [
   { key: 'visual', label: 'Visual' },
 ];
 
-const DEFAULT_SECCIONES_POR_ROL = {
-  user: ['calendario_grupal', 'redes', 'tareas', 'objetivos', 'metricas'],
-  producto: ['calendario_grupal', 'producto', 'visual'],
-  visual: ['calendario_grupal', 'producto', 'visual'],
-  locales: ['calendario_grupal', 'producto', 'visual'],
-};
-
 const UsuarioModal = ({ onClose, usuario }) => {
   const [formData, setFormData] = useState(
     usuario ? {
       ...usuario,
-      secciones: usuario.secciones ?? (DEFAULT_SECCIONES_POR_ROL[usuario.role] || [])
+      secciones: usuario.secciones || []
     } : {
       username: '',
       password: '',

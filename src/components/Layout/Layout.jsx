@@ -21,18 +21,7 @@ import './Layout.css';
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { userData, logout, isAdmin, isManager } = useAuth();
-
-  // Secciones por defecto según rol (para usuarios sin secciones configuradas)
-  const DEFAULT_SECCIONES = {
-    user: ['calendario_grupal', 'redes', 'tareas', 'objetivos', 'metricas'],
-    producto: ['calendario_grupal', 'producto', 'visual'],
-    visual: ['calendario_grupal', 'producto', 'visual'],
-    locales: ['calendario_grupal', 'producto', 'visual'],
-  };
-  const seccionesConfiguradas = userData?.secciones !== undefined;
-  const userSecciones = seccionesConfiguradas
-    ? (userData?.secciones || [])
-    : (DEFAULT_SECCIONES[userData?.role] || []);
+  const userSecciones = userData?.secciones || [];
 
   const location = useLocation();
   const navigate = useNavigate();
