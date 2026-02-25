@@ -16,13 +16,14 @@ const PAUTA_USERS = ['sofia', 'cami', 'vicky', 'juli', 'santiago ribatto'];
 const PAUTA_TASKS_USERS = ['sofia', 'cami', 'vicky', 'juli'];
 const PAUTA_STATS_USERS = ['sofia', 'cami', 'santiago ribatto'];
 
-const CANALES = ['instagram', 'google', 'tiktok', 'metaAds', 'pinterest'];
+const CANALES = ['instagram', 'google', 'tiktok', 'metaAds', 'pinterest', 'mercadolibre'];
 const CANALES_LABELS = {
   instagram: 'Instagram',
   google: 'Google',
   tiktok: 'TikTok',
   metaAds: 'Meta Ads',
   pinterest: 'Pinterest',
+  mercadolibre: 'Mercado Libre',
 };
 
 const ESTADOS = {
@@ -193,6 +194,15 @@ const Pauta = () => {
     try {
       if (inversion) {
         await updateDoc(doc(db, 'marketingar_pauta_inversion', inversion.id), {
+          consumoPorCanal: consumoData,
+        });
+      } else {
+        // No hay doc de inversión para este mes — crear uno con el consumo
+        await addDoc(collection(db, 'marketingar_pauta_inversion'), {
+          mes: startOfMonth(mesActual),
+          totalInversion: 0,
+          objetivoFacturacion: 0,
+          desglosePorCanal: {},
           consumoPorCanal: consumoData,
         });
       }
@@ -420,7 +430,7 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
   const [inversionForm, setInversionForm] = useState({
     totalInversion: '',
     objetivoFacturacion: '',
-    desglosePorCanal: { instagram: '', google: '', tiktok: '', metaAds: '', pinterest: '' },
+    desglosePorCanal: Object.fromEntries(CANALES.map(c => [c, ''])),
   });
   const [consumoForm, setConsumoForm] = useState(
     Object.fromEntries(CANALES.map(c => [c, '']))
