@@ -3,19 +3,22 @@ import {
   collection, query, orderBy, onSnapshot,
   deleteDoc, doc, writeBatch, getDocs, addDoc, updateDoc
 } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import { read, utils } from 'xlsx';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   FiPackage, FiUpload, FiSearch, FiX, FiTrash2,
-  FiAlertTriangle, FiCheck, FiPlus, FiEdit2, FiCalendar
+  FiAlertTriangle, FiCheck, FiPlus, FiEdit2, FiCalendar,
+  FiFile, FiExternalLink
 } from 'react-icons/fi';
 import './Producto.css';
 
-const COLL_PRODUCTOS  = 'marketingar_productos';
-const COLL_CALENDARIO = 'marketingar_productos_calendario';
+const COLL_PRODUCTOS   = 'marketingar_productos';
+const COLL_CALENDARIO  = 'marketingar_productos_calendario';
+const COLL_COLECCIONES = 'marketingar_colecciones';
 
 const TIPOS_CALENDARIO = ['Lanzamiento', 'Fecha clave', 'Campaña', 'Acción comercial', 'Otro'];
 
@@ -75,7 +78,13 @@ const Producto = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  const canEdit = isAdmin || isManager || isProducto;
+  // ── Colecciones ────────────────────────────────────────────────────────────
+  const [colecciones, setColecciones] = useState([]);
+  const [loadingColecciones, setLoadingColecciones] = useState(true);
+  const [showColModal, setShowColModal] = useState(false);
+
+  const canEdit   = isAdmin || isManager || isProducto;
+  const canUpload = isAdmin || isProducto;
 
   useEffect(() => {
     const q = query(collection(db, COLL_PRODUCTOS), orderBy('nombre', 'asc'));
@@ -89,6 +98,14 @@ const Producto = () => {
     const q = query(collection(db, COLL_CALENDARIO), orderBy('fechaEvento', 'asc'));
     return onSnapshot(q, snap => {
       setCalendario(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, COLL_COLECCIONES), orderBy('fechaCarga', 'desc'));
+    return onSnapshot(q, snap => {
+      setColecciones(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoadingColecciones(false);
     });
   }, []);
 
@@ -119,7 +136,7 @@ const Producto = () => {
     e.target.value = '';
   };
 
-  // ── Confirmar subida ───────────────────────────────────────────────────────
+  // ── Confirmar subida catálogo ──────────────────────────────────────────────
   const handleConfirmUpload = async () => {
     if (!preview) return;
     setUploading(true);
@@ -180,6 +197,46 @@ const Producto = () => {
     try { await deleteDoc(doc(db, COLL_CALENDARIO, id)); } catch (e) { console.error(e); }
   };
 
+  // ── Colecciones CRUD ───────────────────────────────────────────────────────
+  const handleSaveColeccion = async ({ nombre, descripcion, temporada, file }) => {
+    const path = `colecciones/${Date.now()}_${file.name}`;
+    const sRef = storageRef(storage, path);
+    const uploadTask = uploadBytesResumable(sRef, file);
+    return new Promise((resolve, reject) => {
+      uploadTask.on('state_changed', null, reject, async () => {
+        try {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          await addDoc(collection(db, COLL_COLECCIONES), {
+            nombre,
+            descripcion: descripcion || '',
+            temporada: temporada || '',
+            url,
+            storagePath: path,
+            nombreArchivo: file.name,
+            fechaCarga: new Date(),
+            creadoPor: userData.name,
+          });
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  };
+
+  const handleDeleteColeccion = async (col) => {
+    if (!confirm(`¿Eliminar "${col.nombre}"?`)) return;
+    try {
+      await deleteDoc(doc(db, COLL_COLECCIONES, col.id));
+      if (col.storagePath) {
+        await deleteObject(storageRef(storage, col.storagePath)).catch(() => {});
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error al eliminar.');
+    }
+  };
+
   // ── Filtros catálogo ───────────────────────────────────────────────────────
   const obsValues = [...new Set(productos.map(p => p.observacion).filter(Boolean))].sort();
 
@@ -214,6 +271,12 @@ const Producto = () => {
           onClick={() => setTab('calendario')}
         >
           Calendario de producto
+        </button>
+        <button
+          className={`producto-tab ${tab === 'colecciones' ? 'active' : ''}`}
+          onClick={() => setTab('colecciones')}
+        >
+          Colecciones
         </button>
       </div>
 
@@ -449,12 +512,98 @@ const Producto = () => {
         </div>
       )}
 
+      {/* ── COLECCIONES ───────────────────────────────────────────────────── */}
+      {tab === 'colecciones' && (
+        <div className="tab-section">
+          <div className="section-header">
+            <div>
+              <h2>Colecciones</h2>
+              <p className="catalogo-fecha">Material de colecciones en PDF</p>
+            </div>
+            {canUpload && (
+              <button className="btn-primary" onClick={() => setShowColModal(true)}>
+                <FiUpload size={14} /> Subir colección
+              </button>
+            )}
+          </div>
+
+          {loadingColecciones ? (
+            <div className="loading">Cargando colecciones...</div>
+          ) : colecciones.length === 0 ? (
+            <div className="empty-state">
+              <FiFile size={40} />
+              <p>No hay colecciones cargadas.</p>
+              {canUpload && <p style={{ fontSize: 13, color: '#bbb' }}>Usá el botón "Subir colección" para agregar un PDF.</p>}
+            </div>
+          ) : (
+            <div className="colecciones-grid">
+              {colecciones.map(col => {
+                const fecha = col.fechaCarga?.toDate
+                  ? col.fechaCarga.toDate()
+                  : col.fechaCarga ? new Date(col.fechaCarga) : null;
+                return (
+                  <div key={col.id} className="coleccion-card">
+                    <div className="coleccion-icon">
+                      <FiFile size={28} />
+                    </div>
+                    <div className="coleccion-body">
+                      <h3 className="coleccion-nombre">{col.nombre}</h3>
+                      {col.temporada && (
+                        <span className="coleccion-temporada">{col.temporada}</span>
+                      )}
+                      {col.descripcion && (
+                        <p className="coleccion-desc">{col.descripcion}</p>
+                      )}
+                      <div className="coleccion-meta">
+                        {fecha && (
+                          <span className="coleccion-fecha">
+                            {format(fecha, "d MMM yyyy", { locale: es })}
+                          </span>
+                        )}
+                        <span className="coleccion-autor">por {col.creadoPor}</span>
+                      </div>
+                    </div>
+                    <div className="coleccion-actions">
+                      <a
+                        href={col.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-ver-pdf"
+                      >
+                        <FiExternalLink size={14} /> Ver PDF
+                      </a>
+                      {canUpload && (
+                        <button
+                          className="btn-icon-sm danger"
+                          onClick={() => handleDeleteColeccion(col)}
+                          title="Eliminar"
+                        >
+                          <FiTrash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modal calendario */}
       {showModal && (
         <CalendarioModal
           editingItem={editingItem}
           onClose={() => { setShowModal(false); setEditingItem(null); }}
           onSave={handleSaveCalendario}
+        />
+      )}
+
+      {/* Modal colecciones */}
+      {showColModal && (
+        <ColeccionModal
+          onClose={() => setShowColModal(false)}
+          onSave={handleSaveColeccion}
         />
       )}
     </div>
@@ -536,6 +685,124 @@ const CalendarioModal = ({ editingItem, onClose, onSave }) => {
             <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
             <button type="submit" className="btn-primary" disabled={saving}>
               {saving ? 'Guardando...' : editingItem ? 'Guardar cambios' : 'Crear'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ── ColeccionModal ────────────────────────────────────────────────────────────
+const ColeccionModal = ({ onClose, onSave }) => {
+  const [form, setForm] = useState({ nombre: '', descripcion: '', temporada: '' });
+  const [pdfFile, setPdfFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState('');
+  const pdfRef = useRef();
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      setError('Solo se permiten archivos PDF.');
+      e.target.value = '';
+      return;
+    }
+    setError('');
+    setPdfFile(file);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!pdfFile) { setError('Seleccioná un archivo PDF.'); return; }
+    setSaving(true);
+    setProgress(0);
+    try {
+      await onSave({ ...form, file: pdfFile });
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError('Error al subir el archivo. Intentá de nuevo.');
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Subir colección</h2>
+          <button className="btn-icon" onClick={onClose} disabled={saving}><FiX /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label>Nombre *</label>
+            <input
+              value={form.nombre}
+              onChange={e => set('nombre', e.target.value)}
+              required
+              placeholder="Ej: Colección Primavera 2025"
+            />
+          </div>
+          <div className="form-group">
+            <label>Temporada</label>
+            <input
+              value={form.temporada}
+              onChange={e => set('temporada', e.target.value)}
+              placeholder="Ej: Verano 2025, SS26..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Descripción</label>
+            <textarea
+              value={form.descripcion}
+              onChange={e => set('descripcion', e.target.value)}
+              rows={2}
+              placeholder="Detalle opcional..."
+            />
+          </div>
+          <div className="form-group">
+            <label>Archivo PDF *</label>
+            <input
+              type="file"
+              accept=".pdf"
+              ref={pdfRef}
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+            <div
+              className={`pdf-dropzone ${pdfFile ? 'has-file' : ''}`}
+              onClick={() => pdfRef.current.click()}
+            >
+              <FiFile size={20} />
+              {pdfFile ? (
+                <span className="pdf-filename">{pdfFile.name}</span>
+              ) : (
+                <span>Hacer clic para seleccionar un PDF</span>
+              )}
+            </div>
+          </div>
+          {error && (
+            <div className="upload-error">
+              <FiAlertTriangle size={14} /> {error}
+            </div>
+          )}
+          {saving && (
+            <div className="upload-progress">
+              <div className="upload-progress-bar">
+                <div className="upload-progress-fill" style={{ width: `${progress}%` }} />
+              </div>
+              <span>Subiendo archivo...</span>
+            </div>
+          )}
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Subiendo...' : <><FiUpload size={14} /> Subir</>}
             </button>
           </div>
         </form>

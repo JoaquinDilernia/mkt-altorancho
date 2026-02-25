@@ -44,8 +44,8 @@
 .mes-selector button {
   background: #e6d7b3;
   border: none;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   font-size: 18px;
   font-weight: 700;
@@ -826,13 +826,43 @@
     flex-direction: column;
   }
 
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mes-selector {
+    gap: 10px;
+    padding: 8px 14px;
+  }
+
+  .pauta-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
+  }
+
+  .pauta-tab {
+    white-space: nowrap;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
   .campanas-grid {
     grid-template-columns: 1fr;
   }
 
+  .consumo-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .consumo-header-row,
   .consumo-row {
-    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+    min-width: 380px;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    font-size: 12px;
+    padding: 8px 10px;
   }
 
   .consumo-bar-wrap {
@@ -845,5 +875,39 @@
 
   .canales-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .modal-content {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn-primary,
+  .modal-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .kpi-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .canales-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mes-actual {
+    min-width: 120px;
+    font-size: 13px;
   }
 }

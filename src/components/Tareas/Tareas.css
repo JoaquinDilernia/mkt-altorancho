@@ -685,16 +685,86 @@
 }
 
 @media (max-width: 768px) {
-  .tareas-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  
   .tareas-header {
     flex-direction: column;
     gap: 16px;
+  }
+
+  .tareas-header .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filtros-extra {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filtro-select {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .btn-icon {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tareas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    border-radius: 14px;
+  }
+
+  .modal-header {
+    padding: 18px 20px;
+  }
+
+  .modal-form {
+    padding: 20px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn-primary,
+  .modal-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .tareas-filters {
+    padding: 16px;
+  }
+
+  .filter-buttons button {
+    font-size: 13px;
+    padding: 7px 12px;
+  }
+
+  .tarea-card {
+    padding: 18px;
+  }
+
+  .tarea-titulo {
+    font-size: 16px;
   }
 }

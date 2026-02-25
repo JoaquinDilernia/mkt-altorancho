@@ -59,6 +59,11 @@
   text-align: center;
 }
 
+.calendar-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -471,16 +476,50 @@
     flex-direction: column;
     gap: 16px;
   }
-  
+
+  .calendar-controls {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .btn-nav {
+    width: 44px;
+    height: 44px;
+  }
+
+  .calendar-month {
+    min-width: 140px;
+    font-size: 18px;
+  }
+
   .calendar-grid {
+    min-width: 560px;
+    gap: 6px;
+    padding: 12px;
     font-size: 12px;
   }
-  
+
   .calendar-day {
-    min-height: 100px;
+    min-height: 80px;
+    padding: 4px;
   }
-  
+
+  .day-number {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .contenido-item {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+
   .canales-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-content.large {
+    max-width: 95vw;
+    padding: 20px;
   }
 }

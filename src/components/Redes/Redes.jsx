@@ -139,6 +139,7 @@ const Redes = () => {
         </button>
       </div>
 
+      <div className="calendar-scroll-wrapper">
       <div className="calendar-grid">
         {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
           <div key={day} className="calendar-header-day">
@@ -183,6 +184,7 @@ const Redes = () => {
             </motion.div>
           );
         })}
+      </div>
       </div>
 
       <AnimatePresence>

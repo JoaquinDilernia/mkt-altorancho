@@ -368,6 +368,11 @@
   opacity: 0.5;
 }
 
+.month-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* VISTA MENSUAL */
 .month-grid {
   display: grid;
@@ -589,34 +594,53 @@
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .header-actions {
     width: 100%;
   }
-  
+
   .vista-selector {
     width: 100%;
     justify-content: space-between;
   }
-  
+
   .week-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
-  
+
+  .week-day {
+    min-height: 180px;
+  }
+
   .week-controls {
     flex-wrap: wrap;
     gap: 12px;
+    padding: 14px 16px;
   }
-  
+
+  .week-info h2 {
+    font-size: 16px;
+  }
+
   .tipos-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .participantes-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .year-grid {
     grid-template-columns: 1fr;
+  }
+
+  .month-grid {
+    min-width: 560px;
+  }
+
+  .month-day {
+    min-height: 90px;
+    padding: 6px;
   }
 }

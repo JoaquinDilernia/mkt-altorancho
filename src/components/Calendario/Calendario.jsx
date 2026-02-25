@@ -307,6 +307,7 @@ const Calendario = () => {
             <button className="btn-nav" onClick={nextMonth}>→</button>
           </div>
 
+          <div className="month-scroll-wrapper">
           <div className="month-grid">
             <div className="month-header-row">
               {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
@@ -364,6 +365,7 @@ const Calendario = () => {
                 </motion.div>
               );
             })}
+          </div>
           </div>
         </>
       )}

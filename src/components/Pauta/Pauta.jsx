@@ -446,11 +446,24 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
   );
 
   const handleSaveInversion = async () => {
+    const totalInvVal = parseFloat(inversionForm.totalInversion);
+    const objetivoVal = parseFloat(inversionForm.objetivoFacturacion);
+    
+    // Validate that at least one field is filled
+    if (isNaN(totalInvVal) && isNaN(objetivoVal)) {
+      alert('Por favor, ingresá al menos el total a invertir o el objetivo de facturación');
+      return;
+    }
+    
+    // Preserve existing values if inputs are empty
     const data = {
-      totalInversion: parseFloat(inversionForm.totalInversion) || 0,
-      objetivoFacturacion: parseFloat(inversionForm.objetivoFacturacion) || 0,
+      totalInversion: isNaN(totalInvVal) ? (inversion?.totalInversion || 0) : totalInvVal,
+      objetivoFacturacion: isNaN(objetivoVal) ? (inversion?.objetivoFacturacion || 0) : objetivoVal,
       desglosePorCanal: Object.fromEntries(
-        CANALES.map(c => [c, parseFloat(inversionForm.desglosePorCanal[c]) || 0])
+        CANALES.map(c => {
+          const val = parseFloat(inversionForm.desglosePorCanal[c]);
+          return [c, isNaN(val) ? (inversion?.desglosePorCanal?.[c] || 0) : val];
+        })
       ),
     };
     await onSaveInversion(data);

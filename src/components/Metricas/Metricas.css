@@ -270,15 +270,61 @@
 }
 
 @media (max-width: 768px) {
+  .metricas-header h1 {
+    font-size: 26px;
+  }
+
   .stats-overview {
     grid-template-columns: 1fr;
   }
-  
+
   .metricas-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .contenidos-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .section-card {
+    padding: 20px;
+  }
+
+  .stat-card-large {
+    gap: 14px;
+  }
+
+  .stat-icon-large {
+    width: 52px;
+    height: 52px;
+    font-size: 22px;
+  }
+
+  .stat-value-large {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .metricas-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .metrica-valor {
+    font-size: 20px;
+  }
+
+  .contenidos-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .contenido-stat-number {
+    font-size: 32px;
+  }
+
+  .section-card {
+    padding: 16px;
   }
 }

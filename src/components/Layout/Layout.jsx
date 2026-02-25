@@ -19,7 +19,7 @@ import {
 import './Layout.css';
 
 const Layout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
   const { userData, logout, isAdmin, isManager } = useAuth();
   const userSecciones = userData?.secciones || [];
 
@@ -67,6 +67,9 @@ const Layout = () => {
 
   return (
     <div className="layout">
+      {sidebarOpen && (
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <img
@@ -86,6 +89,7 @@ const Layout = () => {
                 key={item.path}
                 to={item.path}
                 className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => { if (window.innerWidth <= 768) setSidebarOpen(false); }}
               >
                 <Icon className="nav-icon" />
                 {sidebarOpen && <span>{item.label}</span>}
