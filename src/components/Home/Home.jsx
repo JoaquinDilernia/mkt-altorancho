@@ -104,7 +104,9 @@ const Home = () => {
     ? allTareas.filter(t => t.estado === 'finalizado').length
     : misTareas.filter(t => t.estado === 'finalizado').length;
 
-  const contenidosPublicados = allContenidos.filter(c => c.publicado).length;
+  const contenidosPublicados = allContenidos.filter(c =>
+    c.publicado || (c.publicaciones && Object.values(c.publicaciones).some(p => p?.publicado))
+  ).length;
   const contenidosProgramados = allContenidos.length;
 
   const quickStats = isManager 

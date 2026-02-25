@@ -51,8 +51,8 @@ const Pauta = () => {
   const canUploadAssets = username === 'juli';
   const canAddCopy = username === 'vicky';
   const canConfirmPublicacion = username === 'cami';
-  const canSetInversion = username === 'santiago ribatto';
-  const canUpdateConsumo = username === 'cami';
+  const canSetInversion = ['santiago ribatto', 'cami'].includes(username);
+  const canUpdateConsumo = ['santiago ribatto', 'cami'].includes(username);
 
   // Set default tab on mount
   useEffect(() => {
@@ -190,11 +190,12 @@ const Pauta = () => {
     }
   };
 
-  const handleGuardarConsumo = async (consumoData) => {
+  const handleGuardarConsumo = async ({ consumo: consumoData, presupuesto: presupuestoData }) => {
     try {
       if (inversion) {
         await updateDoc(doc(db, 'marketingar_pauta_inversion', inversion.id), {
           consumoPorCanal: consumoData,
+          desglosePorCanal: presupuestoData,
         });
       } else {
         // No hay doc de inversión para este mes — crear uno con el consumo
@@ -202,7 +203,7 @@ const Pauta = () => {
           mes: startOfMonth(mesActual),
           totalInversion: 0,
           objetivoFacturacion: 0,
-          desglosePorCanal: {},
+          desglosePorCanal: presupuestoData,
           consumoPorCanal: consumoData,
         });
       }
@@ -435,6 +436,9 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
   const [consumoForm, setConsumoForm] = useState(
     Object.fromEntries(CANALES.map(c => [c, '']))
   );
+  const [presupuestoForm, setPresupuestoForm] = useState(
+    Object.fromEntries(CANALES.map(c => [c, '']))
+  );
 
   useEffect(() => {
     if (inversion) {
@@ -447,6 +451,9 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
       });
       setConsumoForm(
         Object.fromEntries(CANALES.map(c => [c, inversion.consumoPorCanal?.[c] || '']))
+      );
+      setPresupuestoForm(
+        Object.fromEntries(CANALES.map(c => [c, inversion.desglosePorCanal?.[c] || '']))
       );
     }
   }, [inversion]);
@@ -481,15 +488,18 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
   };
 
   const handleSaveConsumo = async () => {
-    const data = Object.fromEntries(
+    const consumoData = Object.fromEntries(
       CANALES.map(c => [c, parseFloat(consumoForm[c]) || 0])
     );
-    await onSaveConsumo(data);
+    const presupuestoData = Object.fromEntries(
+      CANALES.map(c => [c, parseFloat(presupuestoForm[c]) || 0])
+    );
+    await onSaveConsumo({ consumo: consumoData, presupuesto: presupuestoData });
     setEditingConsumo(false);
   };
 
   const totalConsumido = CANALES.reduce(
-    (acc, c) => acc + (inversion?.consumoPorCanal?.[c] || 0), 0
+    (acc, c) => acc + (parseFloat(consumoForm[c]) || 0), 0
   );
 
   return (
@@ -609,7 +619,7 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
             <h3>Consumo por plataforma</h3>
             {!editingConsumo ? (
               <button className="btn-secondary" onClick={() => setEditingConsumo(true)}>
-                Actualizar consumo
+                Actualizar consumos/presupuestos
               </button>
             ) : (
               <div className="btn-group">
@@ -622,6 +632,8 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
             inversion={inversion}
             consumoForm={consumoForm}
             setConsumoForm={setConsumoForm}
+            presupuestoForm={presupuestoForm}
+            setPresupuestoForm={setPresupuestoForm}
             editing={editingConsumo}
           />
         </div>
@@ -641,7 +653,7 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
 };
 
 // Shared consumption table
-const ConsumoTable = ({ inversion, consumoForm, setConsumoForm, editing }) => (
+const ConsumoTable = ({ inversion, consumoForm, setConsumoForm, presupuestoForm, setPresupuestoForm, editing }) => (
   <div className="consumo-table">
     <div className="consumo-header-row">
       <span>Canal</span>
@@ -650,16 +662,28 @@ const ConsumoTable = ({ inversion, consumoForm, setConsumoForm, editing }) => (
       <span>Restante</span>
     </div>
     {CANALES.map(c => {
-      const presupuesto = inversion?.desglosePorCanal?.[c] || 0;
-      const consumidoVal = editing
-        ? (parseFloat(consumoForm?.[c]) || 0)
+      const presupuesto = editing && presupuestoForm
+        ? (parseFloat(presupuestoForm[c]) || 0)
+        : (inversion?.desglosePorCanal?.[c] || 0);
+      const consumidoVal = consumoForm
+        ? (parseFloat(consumoForm[c]) || 0)
         : (inversion?.consumoPorCanal?.[c] || 0);
       const restante = presupuesto - consumidoVal;
       const pct = presupuesto > 0 ? Math.min((consumidoVal / presupuesto) * 100, 100) : 0;
       return (
         <div key={c} className="consumo-row">
           <span className="consumo-canal">{CANALES_LABELS[c]}</span>
-          <span>${presupuesto.toLocaleString('es-AR')}</span>
+          {editing && setPresupuestoForm ? (
+            <input
+              type="number"
+              className="consumo-input"
+              value={presupuestoForm[c]}
+              onChange={e => setPresupuestoForm({ ...presupuestoForm, [c]: e.target.value })}
+              placeholder="0"
+            />
+          ) : (
+            <span>${presupuesto.toLocaleString('es-AR')}</span>
+          )}
           {editing && setConsumoForm ? (
             <input
               type="number"

@@ -63,8 +63,12 @@ const Metricas = () => {
     return entrega < new Date();
   }).length;
 
-  const contenidosPublicados = contenidosRedes.filter(c => c.publicado).length;
-  const contenidosPendientes = contenidosRedes.filter(c => !c.publicado).length;
+  const contenidosPublicados = contenidosRedes.filter(c =>
+    c.publicado || (c.publicaciones && Object.values(c.publicaciones).some(p => p?.publicado))
+  ).length;
+  const contenidosPendientes = contenidosRedes.filter(c =>
+    !c.publicado && (!c.publicaciones || !Object.values(c.publicaciones).some(p => p?.publicado))
+  ).length;
 
   // Métricas por usuario
   const metricasPorUsuario = usuarios.filter(u => u.role !== 'admin').map(usuario => {

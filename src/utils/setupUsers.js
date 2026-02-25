@@ -6,7 +6,7 @@ const users = [
     username: 'sofi',
     password: 'sofi123', // Cambiar en producción
     name: 'Sofi',
-    role: 'admin',
+    role: 'producto',
     areas: ['Coordinación Marketing'],
     partTime: false,
     active: true
@@ -60,7 +60,7 @@ const users = [
     username: 'caro',
     password: 'caro123',
     name: 'Caro',
-    role: 'user',
+    role: 'visual',
     areas: ['Visual Merchandising'],
     partTime: true,
     active: true
@@ -80,6 +80,15 @@ const users = [
     name: 'Santiago Ribatto',
     role: 'manager',
     areas: ['Dirección'],
+    partTime: false,
+    active: true
+  },
+  {
+    username: 'marianne',
+    password: 'marianne123',
+    name: 'Marianne',
+    role: 'producto',
+    areas: ['Producto'],
     partTime: false,
     active: true
   }
