@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -91,8 +91,9 @@ const Pauta = () => {
 
   // Load inversion data
   useEffect(() => {
-    const inicio = startOfMonth(mesActual);
-    const fin = endOfMonth(mesActual);
+    setInversion(null); // limpiar al cambiar de mes
+    const inicio = Timestamp.fromDate(startOfMonth(mesActual));
+    const fin = Timestamp.fromDate(endOfMonth(mesActual));
     const q = query(
       collection(db, 'marketingar_pauta_inversion'),
       where('mes', '>=', inicio),
@@ -178,7 +179,7 @@ const Pauta = () => {
         await updateDoc(doc(db, 'marketingar_pauta_inversion', inversion.id), formData);
       } else {
         await addDoc(collection(db, 'marketingar_pauta_inversion'), {
-          mes: startOfMonth(mesActual),
+          mes: Timestamp.fromDate(startOfMonth(mesActual)),
           ...formData,
           consumoPorCanal: {},
         });
@@ -199,7 +200,7 @@ const Pauta = () => {
       } else {
         // No hay doc de inversión para este mes — crear uno con el consumo
         await addDoc(collection(db, 'marketingar_pauta_inversion'), {
-          mes: startOfMonth(mesActual),
+          mes: Timestamp.fromDate(startOfMonth(mesActual)),
           totalInversion: 0,
           objetivoFacturacion: 0,
           desglosePorCanal: presupuestoData,
