@@ -16,9 +16,8 @@ const PAUTA_USERS = ['sofia', 'cami', 'vicky', 'juli', 'santiago ribatto'];
 const PAUTA_TASKS_USERS = ['sofia', 'cami', 'vicky', 'juli'];
 const PAUTA_STATS_USERS = ['sofia', 'cami', 'santiago ribatto'];
 
-const CANALES = ['instagram', 'google', 'tiktok', 'metaAds', 'pinterest', 'mercadolibre'];
+const CANALES = ['google', 'tiktok', 'metaAds', 'pinterest', 'mercadolibre'];
 const CANALES_LABELS = {
-  instagram: 'Instagram',
   google: 'Google',
   tiktok: 'TikTok',
   metaAds: 'Meta Ads',
