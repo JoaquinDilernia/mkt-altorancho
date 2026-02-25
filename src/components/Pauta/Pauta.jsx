@@ -455,6 +455,14 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
       setPresupuestoForm(
         Object.fromEntries(CANALES.map(c => [c, inversion.desglosePorCanal?.[c] || '']))
       );
+    } else {
+      setInversionForm({
+        totalInversion: '',
+        objetivoFacturacion: '',
+        desglosePorCanal: Object.fromEntries(CANALES.map(c => [c, ''])),
+      });
+      setConsumoForm(Object.fromEntries(CANALES.map(c => [c, ''])));
+      setPresupuestoForm(Object.fromEntries(CANALES.map(c => [c, ''])));
     }
   }, [inversion]);
 
