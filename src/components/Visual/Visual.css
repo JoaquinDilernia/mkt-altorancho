@@ -576,6 +576,167 @@
   color: #aaa;
 }
 
+/* Existing photos in modal */
+.fotos-existing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.foto-existing-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.foto-thumb-link {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e0e0e0;
+  background: #f5f5f5;
+  transition: border-color 0.15s;
+}
+
+.foto-thumb-link:hover { border-color: #462829; }
+
+.foto-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.foto-thumb-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+}
+
+.foto-remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dc2626;
+  border: 2px solid white;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1;
+}
+
+.foto-remove-btn:hover { background: #b91c1c; }
+
+.foto-remove-btn.inline {
+  position: static;
+  width: 16px;
+  height: 16px;
+  background: #e0e0e0;
+  border: none;
+  color: #555;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.foto-remove-btn.inline:hover { background: #dc2626; color: white; }
+
+/* Pending files list */
+.fotos-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.foto-pending-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #059669;
+}
+
+.foto-pending-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Card photo grid */
+.visita-fotos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.foto-card-thumb {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  background: #f5f5f5;
+  flex-shrink: 0;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.foto-card-thumb:hover { border-color: #462829; opacity: 0.85; }
+
+.foto-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.foto-card-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.foto-card-more {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #462829;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.foto-card-more:hover { background: #f9f6ef; }
+
 /* ── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .visitas-grid,

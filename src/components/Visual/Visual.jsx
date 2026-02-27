@@ -313,12 +313,28 @@ const VisitaCard = ({ item, canEdit, userData, onEdit, onDelete, onConfirmar, on
         </div>
       )}
 
-      {item.fotos && (
-        <div className="visita-fotos">
-          <FiImage size={13} />
-          <a href={item.fotos} target="_blank" rel="noreferrer">Ver fotos</a>
-        </div>
-      )}
+      {(() => {
+        const fotos = normalizeFotos(item.fotos);
+        if (!fotos.length) return null;
+        return (
+          <div className="visita-fotos-grid">
+            {fotos.slice(0, 4).map((url, i) => {
+              if (i === 3 && fotos.length > 4) return (
+                <a key={i} href={fotos[i]} target="_blank" rel="noreferrer" className="foto-card-more">
+                  +{fotos.length - 3}
+                </a>
+              );
+              return (
+                <a key={i} href={url} target="_blank" rel="noreferrer" className="foto-card-thumb">
+                  <img src={url} alt={`Foto ${i + 1}`}
+                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                  <span className="foto-card-fallback"><FiImage size={14} /></span>
+                </a>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Confirmaciones */}
       <div className="confirmaciones-row">
@@ -410,12 +426,28 @@ const ArmadoCard = ({ item, canEdit, userData, onEdit, onDelete, onConfirmar, on
         </div>
       )}
 
-      {item.fotos && (
-        <div className="visita-fotos">
-          <FiImage size={13} />
-          <a href={item.fotos} target="_blank" rel="noreferrer">Ver referencias / fotos</a>
-        </div>
-      )}
+      {(() => {
+        const fotos = normalizeFotos(item.fotos);
+        if (!fotos.length) return null;
+        return (
+          <div className="visita-fotos-grid">
+            {fotos.slice(0, 4).map((url, i) => {
+              if (i === 3 && fotos.length > 4) return (
+                <a key={i} href={fotos[i]} target="_blank" rel="noreferrer" className="foto-card-more">
+                  +{fotos.length - 3}
+                </a>
+              );
+              return (
+                <a key={i} href={url} target="_blank" rel="noreferrer" className="foto-card-thumb">
+                  <img src={url} alt={`Foto ${i + 1}`}
+                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                  <span className="foto-card-fallback"><FiImage size={14} /></span>
+                </a>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       <div className="confirmaciones-row">
         <button
@@ -463,20 +495,25 @@ const ArmadoCard = ({ item, canEdit, userData, onEdit, onDelete, onConfirmar, on
   );
 };
 
+// ── Helper ────────────────────────────────────────────────────────────────────
+const normalizeFotos = (fotos) =>
+  Array.isArray(fotos) ? fotos : (fotos ? [fotos] : []);
+
 // ── VisualModal ───────────────────────────────────────────────────────────────
 const VisualModal = ({ type, editingItem, onClose, onSave }) => {
   const getInitial = () => {
     if (editingItem) {
       const d = { ...editingItem };
       if (d.fechaVisita?.toDate) d.fechaVisita = d.fechaVisita.toDate().toISOString().split('T')[0];
+      d.fotos = normalizeFotos(d.fotos);
       return d;
     }
-    if (type === 'visita') return { local: 'Nordelta', fechaVisita: '', notas: '', aclaraciones: '', fotos: '' };
-    return { titulo: '', descripcion: '', indicaciones: '', criterios: '', fotos: '' };
+    if (type === 'visita') return { local: 'Nordelta', fechaVisita: '', notas: '', aclaraciones: '', fotos: [] };
+    return { titulo: '', descripcion: '', indicaciones: '', criterios: '', fotos: [] };
   };
 
   const [form, setForm] = useState(getInitial());
-  const [fotoFile, setFotoFile] = useState(null);
+  const [fotoFiles, setFotoFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -489,20 +526,41 @@ const VisualModal = ({ type, editingItem, onClose, onSave }) => {
       if (type === 'visita' && data.fechaVisita) {
         data.fechaVisita = new Date(data.fechaVisita);
       }
-      // Si hay archivo nuevo, subirlo a Storage
-      if (fotoFile) {
-        const path = `visual/${Date.now()}_${fotoFile.name}`;
-        const sRef = storageRef(storage, path);
-        await uploadBytes(sRef, fotoFile);
-        data.fotos = await getDownloadURL(sRef);
+      // Upload all new files in parallel
+      if (fotoFiles.length > 0) {
+        const newUrls = await Promise.all(
+          fotoFiles.map(async (file) => {
+            const path = `visual/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name}`;
+            const sRef = storageRef(storage, path);
+            await uploadBytes(sRef, file);
+            return getDownloadURL(sRef);
+          })
+        );
+        data.fotos = [...normalizeFotos(data.fotos), ...newUrls];
+      } else {
+        data.fotos = normalizeFotos(data.fotos);
       }
       onSave(data);
     } catch (err) {
       console.error(err);
-      alert('Error al subir la imagen.');
+      alert('Error al subir las imágenes.');
     } finally {
       setUploading(false);
     }
+  };
+
+  const removeExistingFoto = (idx) => {
+    set('fotos', form.fotos.filter((_, i) => i !== idx));
+  };
+
+  const removePendingFile = (idx) => {
+    setFotoFiles(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleFilesChange = (files) => {
+    setFotoFiles(prev => [...prev, ...files]);
+    // Reset input so same file can be re-added after removal
+    if (fileRef.current) fileRef.current.value = '';
   };
 
   return (
@@ -537,10 +595,12 @@ const VisualModal = ({ type, editingItem, onClose, onSave }) => {
                 <textarea value={form.aclaraciones} onChange={e => set('aclaraciones', e.target.value)} rows={3} placeholder="Pendientes, observaciones..." />
               </div>
               <FotoUploadField
-                fotoUrl={form.fotos}
-                fotoFile={fotoFile}
+                fotoUrls={form.fotos}
+                fotoFiles={fotoFiles}
                 fileRef={fileRef}
-                onFileChange={setFotoFile}
+                onFilesChange={handleFilesChange}
+                onRemoveExisting={removeExistingFoto}
+                onRemovePending={removePendingFile}
               />
             </>
           ) : (
@@ -562,10 +622,12 @@ const VisualModal = ({ type, editingItem, onClose, onSave }) => {
                 <textarea value={form.criterios} onChange={e => set('criterios', e.target.value)} rows={3} placeholder="Aclaraciones adicionales..." />
               </div>
               <FotoUploadField
-                fotoUrl={form.fotos}
-                fotoFile={fotoFile}
+                fotoUrls={form.fotos}
+                fotoFiles={fotoFiles}
                 fileRef={fileRef}
-                onFileChange={setFotoFile}
+                onFilesChange={handleFilesChange}
+                onRemoveExisting={removeExistingFoto}
+                onRemovePending={removePendingFile}
               />
             </>
           )}
@@ -582,29 +644,72 @@ const VisualModal = ({ type, editingItem, onClose, onSave }) => {
   );
 };
 
-// ── Campo de foto con upload ───────────────────────────────────────────────────
-const FotoUploadField = ({ fotoUrl, fotoFile, fileRef, onFileChange }) => (
+// ── Campo de fotos con upload múltiple ────────────────────────────────────────
+const FotoUploadField = ({ fotoUrls, fotoFiles, fileRef, onFilesChange, onRemoveExisting, onRemovePending }) => (
   <div className="form-group">
     <label>Fotos</label>
     <input
       type="file"
       accept="image/*,.pdf"
+      multiple
       ref={fileRef}
       style={{ display: 'none' }}
-      onChange={e => onFileChange(e.target.files?.[0] || null)}
+      onChange={e => onFilesChange(Array.from(e.target.files || []))}
     />
+
+    {/* Existing saved photos */}
+    {fotoUrls.length > 0 && (
+      <div className="fotos-existing">
+        {fotoUrls.map((url, i) => (
+          <div key={i} className="foto-existing-item">
+            <a href={url} target="_blank" rel="noreferrer" className="foto-thumb-link">
+              <img
+                src={url}
+                alt={`Foto ${i + 1}`}
+                className="foto-thumb"
+                onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+              />
+              <span className="foto-thumb-fallback"><FiImage size={16} /></span>
+            </a>
+            <button
+              type="button"
+              className="foto-remove-btn"
+              onClick={() => onRemoveExisting(i)}
+              title="Eliminar foto"
+            >
+              <FiX size={10} />
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Pending new files */}
+    {fotoFiles.length > 0 && (
+      <div className="fotos-pending">
+        {fotoFiles.map((file, i) => (
+          <div key={i} className="foto-pending-item">
+            <FiImage size={12} />
+            <span className="foto-pending-name">{file.name}</span>
+            <button
+              type="button"
+              className="foto-remove-btn inline"
+              onClick={() => onRemovePending(i)}
+              title="Quitar"
+            >
+              <FiX size={10} />
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+
     <div className="foto-upload-row">
       <button type="button" className="btn-secondary" onClick={() => fileRef.current.click()}>
-        <FiCamera size={14} /> Subir imagen
+        <FiCamera size={14} /> {fotoUrls.length + fotoFiles.length > 0 ? 'Agregar más fotos' : 'Subir fotos'}
       </button>
-      {fotoFile ? (
-        <span className="foto-filename">{fotoFile.name}</span>
-      ) : fotoUrl ? (
-        <a href={fotoUrl} target="_blank" rel="noreferrer" className="foto-link">
-          <FiImage size={13} /> Ver foto actual
-        </a>
-      ) : (
-        <span className="foto-empty">Sin foto</span>
+      {fotoUrls.length === 0 && fotoFiles.length === 0 && (
+        <span className="foto-empty">Sin fotos</span>
       )}
     </div>
   </div>
