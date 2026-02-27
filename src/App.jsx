@@ -12,6 +12,9 @@ import Objetivos from './components/Objetivos/Objetivos';
 import Pauta from './components/Pauta/Pauta';
 import Producto from './components/Producto/Producto';
 import Visual from './components/Visual/Visual';
+import Perfil from './components/Perfil/Perfil';
+import Salas from './components/Salas/Salas';
+import Reuniones from './components/Reuniones/Reuniones';
 import './App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -57,6 +60,9 @@ function App() {
             <Route path="producto" element={<Producto />} />
             <Route path="visual" element={<Visual />} />
             <Route path="usuarios" element={<Usuarios />} />
+            <Route path="perfil" element={<Perfil />} />
+            <Route path="reuniones" element={<Reuniones />} />
+            <Route path="salas" element={<Salas />} />
           </Route>
         </Routes>
       </HashRouter>

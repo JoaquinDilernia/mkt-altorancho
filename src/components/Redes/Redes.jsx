@@ -28,7 +28,7 @@ import { es } from 'date-fns/locale';
 import './Redes.css';
 
 const Redes = () => {
-  const { userData, isAdmin, isManager } = useAuth();
+  const { userData, isAdmin, isCoordinator, roleType } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [contenidos, setContenidos] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -36,10 +36,10 @@ const Redes = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const canEdit = isAdmin && !isManager; // Manager solo puede ver
+  const canEdit = isAdmin || isCoordinator;
 
   const focos = [
-    'producto', 'comercial', 'info', 'campaña', 
+    'producto', 'comercial', 'info', 'campaña',
     'lanzamiento', 'venta', 'novedad', 'mayorista', 'apertura'
   ];
 
@@ -53,23 +53,8 @@ const Redes = () => {
     { value: 'tiktok', label: 'TikTok', icon: FiImage, requiresLink: true }
   ];
 
-  // Determinar rol del usuario
-  const esDiseño = userData?.areas?.some(area => 
-    area.toLowerCase().includes('diseño') || 
-    area.toLowerCase().includes('video') ||
-    area.toLowerCase().includes('juli')
-  );
-  
-  const esCommunity = userData?.areas?.some(area => 
-    area.toLowerCase().includes('social') || 
-    area.toLowerCase().includes('contenido') ||
-    area.toLowerCase().includes('community') ||
-    area.toLowerCase().includes('vicky') ||
-    area.toLowerCase().includes('trini') ||
-    area.toLowerCase().includes('email marketing') ||
-    area.toLowerCase().includes('locales') ||
-    area.toLowerCase().includes('x &')
-  ) || userData?.name?.toLowerCase().includes('trini') || userData?.name?.toLowerCase().includes('vicky');
+  const esDiseño    = roleType === 'diseno';
+  const esCommunity = roleType === 'community';
 
   useEffect(() => {
     const start = startOfMonth(currentDate);
@@ -207,9 +192,9 @@ const Redes = () => {
 };
 
 const ContenidoItem = ({ contenido, canales, onEdit }) => {
-  const { isAdmin, isManager } = useAuth();
-  const canEditItem = isAdmin && !isManager;
-  const canOpenModal = !isManager; // Todos menos manager pueden abrir modal
+  const { isAdmin, isCoordinator } = useAuth();
+  const canEditItem = isAdmin || isCoordinator;
+  const canOpenModal = true; // Todos pueden abrir el modal
   
   const getEstadoColor = () => {
     switch(contenido.estado) {
@@ -281,7 +266,10 @@ const ContenidoItem = ({ contenido, canales, onEdit }) => {
 };
 
 const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido }) => {
-  const { userData, isAdmin } = useAuth();
+  const { userData, isAdmin, isCoordinator, roleType } = useAuth();
+  const canEditFull = isAdmin || isCoordinator;
+  const esDiseño    = roleType === 'diseno';
+  const esCommunity = roleType === 'community';
   const [formData, setFormData] = useState(contenido ? {
     ...contenido,
     fecha: contenido.fecha ? formatDateForInput(contenido.fecha) : '',
@@ -303,32 +291,6 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
     emailEnviado: false
   });
   const [loading, setLoading] = useState(false);
-
-  // Determinar rol del usuario
-  const esDiseño = userData?.areas?.some(area => 
-    area.toLowerCase().includes('diseño') || 
-    area.toLowerCase().includes('video') ||
-    area.toLowerCase().includes('juli')
-  );
-  
-  const esCommunity = userData?.areas?.some(area => 
-    area.toLowerCase().includes('social') || 
-    area.toLowerCase().includes('contenido') ||
-    area.toLowerCase().includes('community') ||
-    area.toLowerCase().includes('vicky') ||
-    area.toLowerCase().includes('trini') ||
-    area.toLowerCase().includes('email marketing') ||
-    area.toLowerCase().includes('locales') ||
-    area.toLowerCase().includes('x &')
-  ) || userData?.name?.toLowerCase().includes('trini') || userData?.name?.toLowerCase().includes('vicky');
-
-  console.log('🔍 DEBUG Modal Redes:', {
-    userName: userData?.name,
-    userAreas: userData?.areas,
-    esDiseño,
-    esCommunity,
-    isAdmin
-  });
 
   const handleCanalToggle = (canal) => {
     setFormData(prev => ({
@@ -433,7 +395,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                   value={formData.fecha}
                   onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
                   required
-                  disabled={!isAdmin && contenido}
+                  disabled={!canEditFull && contenido}
                 />
                 <small>Fecha de carga: {formData.fecha ? new Date(parseLocalDate(formData.fecha).getTime() - 86400000).toLocaleDateString('es-AR') : '-'}</small>
               </div>
@@ -444,7 +406,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                   value={formData.foco}
                   onChange={(e) => setFormData({ ...formData, foco: e.target.value })}
                   required
-                  disabled={!isAdmin && contenido}
+                  disabled={!canEditFull && contenido}
                 >
                   {focos.map(foco => (
                     <option key={foco} value={foco}>{foco}</option>
@@ -461,7 +423,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                 required
                 rows="2"
                 placeholder="Descripción del contenido..."
-                disabled={!isAdmin && contenido}
+                disabled={!canEditFull && contenido}
               />
             </div>
 
@@ -472,20 +434,20 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                 value={formData.inspo}
                 onChange={(e) => setFormData({ ...formData, inspo: e.target.value })}
                 placeholder="Link de inspiración o referencia..."
-                disabled={!isAdmin && contenido}
+                disabled={!canEditFull && contenido}
               />
             </div>
 
             <div className="form-group">
-              <label>Canales * {!isAdmin && contenido && '(solo lectura)'}</label>
+              <label>Canales * {!canEditFull && contenido && '(solo lectura)'}</label>
               <div className="canales-grid">
                 {canales.map(canal => (
                   <button
                     key={canal.value}
                     type="button"
                     className={`canal-button ${formData.canales.includes(canal.value) ? 'active' : ''}`}
-                    onClick={() => !(!isAdmin && contenido) && handleCanalToggle(canal.value)}
-                    disabled={!isAdmin && contenido}
+                    onClick={() => !(!canEditFull && contenido) && handleCanalToggle(canal.value)}
+                    disabled={!canEditFull && contenido}
                   >
                     <canal.icon />
                     <span>{canal.label}</span>
@@ -502,16 +464,16 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                 onChange={(e) => setFormData({ ...formData, aclaraciones: e.target.value })}
                 rows="2"
                 placeholder="Detalles adicionales..."
-                disabled={!isAdmin && contenido}
+                disabled={!canEditFull && contenido}
               />
             </div>
           </div>
 
-          {/* SECCIÓN 2: DISEÑO (Juli) */}
-          {(esDiseño || esCommunity || isAdmin) && contenido && (
+          {/* SECCIÓN 2: DISEÑO */}
+          {(esDiseño || esCommunity || canEditFull) && contenido && (
             <div className="form-section diseno-section">
               <h3>📐 Diseño y Contenido</h3>
-              
+
               <div className="form-group">
                 <label>Archivos de Diseño</label>
                 <input
@@ -519,9 +481,9 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                   value={formData.archivosDiseno}
                   onChange={(e) => setFormData({ ...formData, archivosDiseno: e.target.value })}
                   placeholder="Link a Drive, Dropbox, etc..."
-                  disabled={!esDiseño && !isAdmin}
+                  disabled={!esDiseño && !canEditFull}
                 />
-                {esCommunity && !esDiseño && !isAdmin && (
+                {esCommunity && !esDiseño && !canEditFull && (
                   <small style={{color: '#666', fontSize: '12px'}}>Solo lectura - Editado por Diseño</small>
                 )}
               </div>
@@ -532,12 +494,12 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                     type="checkbox"
                     checked={formData.contenidoListo}
                     onChange={(e) => setFormData({ ...formData, contenidoListo: e.target.checked })}
-                    disabled={!esDiseño && !isAdmin}
+                    disabled={!esDiseño && !canEditFull}
                   />
                   <FiCheck /> <strong>Contenido listo para publicar</strong>
                 </label>
-                {esDiseño || isAdmin ? (
-                  <small>⚠️ Hasta que no marques esto, Vicky y Trini no pueden publicar</small>
+                {esDiseño || canEditFull ? (
+                  <small>⚠️ Hasta que no marques esto, Community no puede publicar</small>
                 ) : (
                   <small style={{color: formData.contenidoListo ? '#10b981' : '#f59e0b'}}>
                     {formData.contenidoListo ? '✓ Contenido disponible para publicar' : '⏳ Esperando aprobación de Diseño'}
@@ -547,12 +509,12 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
             </div>
           )}
 
-          {/* SECCIÓN 3: PUBLICACIÓN (Vicky/Trini) */}
-          {(esCommunity || isAdmin) && contenido && (
+          {/* SECCIÓN 3: PUBLICACIÓN */}
+          {(esCommunity || canEditFull) && contenido && (
             <div className="form-section publicacion-section">
               <h3>📱 Publicación por Canal</h3>
               
-              {!formData.contenidoListo && !isAdmin && esCommunity && (
+              {!formData.contenidoListo && !canEditFull && esCommunity && (
                 <div className="alert-warning">
                   ⏳ Nota: Algunas opciones están bloqueadas hasta que Diseño marque "Contenido listo". 
                   Puedes marcar Email Marketing como enviado si ya lo hiciste.
@@ -562,7 +524,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
               {formData.canales.map(canalValue => {
                 const canalInfo = canales.find(c => c.value === canalValue);
                 const pub = formData.publicaciones[canalValue] || { publicado: false, link: '' };
-                const bloqueado = !formData.contenidoListo && !isAdmin;
+                const bloqueado = !formData.contenidoListo && !canEditFull;
 
                 return (
                   <div key={canalValue} className="canal-publicacion-item">
@@ -634,7 +596,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
           )}
 
           <div className="modal-actions">
-            {isAdmin && contenido && (
+            {canEditFull && contenido && (
               <button 
                 type="button" 
                 className="btn-danger"

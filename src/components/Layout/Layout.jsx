@@ -15,12 +15,15 @@ import {
   FiRadio,
   FiPackage,
   FiCamera,
+  FiMapPin,
+  FiVideo,
 } from 'react-icons/fi';
+import { ROLE_LABELS, AREA_LABELS } from '../../utils/roles';
 import './Layout.css';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
-  const { userData, logout, isAdmin, isManager } = useAuth();
+  const { userData, logout, roleType, area } = useAuth();
   const userSecciones = userData?.secciones || [];
 
   const location = useLocation();
@@ -32,37 +35,61 @@ const Layout = () => {
   };
 
   const menuItems = [
-    { path: '/', icon: FiHome, label: 'Inicio', access: 'all' },
-    { path: '/calendario', icon: FiCalendar, label: 'Calendario Grupal', access: 'calendario_grupal' },
-    { path: '/redes', icon: FiInstagram, label: 'Calendario Redes', access: 'redes' },
-    { path: '/tareas', icon: FiCheckSquare, label: 'Tareas', access: 'tareas' },
-    { path: '/objetivos', icon: FiTarget, label: 'Objetivos', access: 'objetivos' },
-    { path: '/pauta', icon: FiRadio, label: 'Pauta', access: 'pauta' },
-    { path: '/metricas', icon: FiBarChart2, label: 'Métricas', access: 'metricas' },
-    { path: '/producto', icon: FiPackage, label: 'Producto', access: 'producto' },
-    { path: '/visual', icon: FiCamera, label: 'Visual', access: 'visual' },
-    { path: '/usuarios', icon: FiUsers, label: 'Usuarios', access: 'admin' },
+    { path: '/',           icon: FiHome,        label: 'Inicio',            access: 'all' },
+
+    { separator: true, label: 'General' },
+    { path: '/calendario', icon: FiCalendar,    label: 'Calendario Grupal', access: 'calendario_grupal' },
+    { path: '/tareas',     icon: FiCheckSquare, label: 'Tareas',            access: 'tareas' },
+    { path: '/objetivos',  icon: FiTarget,      label: 'Objetivos',         access: 'objetivos' },
+    { path: '/reuniones',  icon: FiVideo,       label: 'Reuniones',         access: 'reuniones' },
+    { path: '/metricas',   icon: FiBarChart2,   label: 'Métricas',          access: 'metricas' },
+
+    { separator: true, label: 'Marketing' },
+    { path: '/redes',      icon: FiInstagram,   label: 'Calendario Redes',  access: 'redes',    area: 'marketing' },
+    { path: '/pauta',      icon: FiRadio,       label: 'Pauta',             access: 'pauta',    area: 'marketing' },
+    { path: '/visual',     icon: FiCamera,      label: 'Visual',            access: 'visual',   area: 'marketing' },
+
+    { separator: true, label: 'Producto' },
+    { path: '/producto',   icon: FiPackage,     label: 'Producto',          access: 'producto', area: 'producto' },
+
+    { separator: true, label: 'Admin' },
+    { path: '/usuarios',   icon: FiUsers,       label: 'Usuarios',          access: 'admin' },
+    { path: '/salas',      icon: FiMapPin,      label: 'Salas',             access: 'superadmin_only' },
   ];
 
-  const filteredMenu = menuItems.filter(item => {
+  const isItemVisible = (item) => {
+    if (item.separator) return true; // se limpian después
+    if (roleType === 'superadmin') return true;
+    if (item.access === 'superadmin_only') return false;
+    if (item.access === 'admin') return roleType === 'coordinador';
     if (item.access === 'all') return true;
-    if (item.access === 'admin') return isAdmin;
-    if (isAdmin) return true;
-    if (item.access === 'tareas' || item.access === 'objetivos') {
-      return !isManager && userSecciones.includes(item.access);
+    if (roleType === 'coordinador' || roleType === 'directivo') {
+      if (item.area && item.area !== area) return false;
+      return true;
     }
-    if (isManager) return item.access !== 'pauta';
     return userSecciones.includes(item.access);
-  });
+  };
+
+  // Filtra ítems y luego limpia separadores huérfanos
+  const filteredMenu = (() => {
+    const visible = menuItems.filter(isItemVisible);
+    return visible.filter((item, idx) => {
+      if (!item.separator) return true;
+      const prev = visible[idx - 1];
+      const next = visible[idx + 1];
+      // Quitar si es el primero, el último, o si el siguiente también es separador
+      if (!prev || !next || next.separator) return false;
+      return true;
+    });
+  })();
 
   const rolLabel = () => {
-    if (isAdmin) return 'Admin';
-    if (isManager) return 'Dirección';
-    const role = userData?.role;
-    if (role === 'producto') return 'Producto';
-    if (role === 'visual') return 'Visual';
-    if (role === 'locales') return 'Locales';
-    return 'Usuario';
+    if (!roleType) return 'Usuario';
+    const base = ROLE_LABELS[roleType] || roleType;
+    const areaName = area ? (AREA_LABELS[area] || area) : null;
+    if ((roleType === 'coordinador' || roleType === 'directivo') && areaName) return `${base} ${areaName}`;
+    if (areaName && roleType === 'miembro') return areaName;
+    return base;
   };
 
   return (
@@ -77,11 +104,17 @@ const Layout = () => {
             alt="Alto"
             className="sidebar-logo"
           />
-          {sidebarOpen && <span className="sidebar-title">Marketing</span>}
         </div>
 
         <nav className="sidebar-nav">
-          {filteredMenu.map((item) => {
+          {filteredMenu.map((item, idx) => {
+            if (item.separator) {
+              return (
+                <div key={`sep-${idx}`} className="nav-separator">
+                  {sidebarOpen && <span>{item.label}</span>}
+                </div>
+              );
+            }
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
@@ -113,13 +146,18 @@ const Layout = () => {
           </button>
 
           <div className="user-info">
-            <div className="user-avatar">
-              {userData?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-            <div className="user-details">
-              <span className="user-name">{userData?.name}</span>
-              <span className="user-role">{rolLabel()}</span>
-            </div>
+            <Link to="/perfil" className="user-info-link" title="Mi perfil">
+              <div className="user-avatar">
+                {userData?.photoURL
+                  ? <img src={userData.photoURL} alt="foto" className="user-avatar-img" />
+                  : (userData?.name?.charAt(0)?.toUpperCase() || 'U')
+                }
+              </div>
+              <div className="user-details">
+                <span className="user-name">{userData?.name}</span>
+                <span className="user-role">{rolLabel()}</span>
+              </div>
+            </Link>
           </div>
         </header>
 

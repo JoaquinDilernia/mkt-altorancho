@@ -19,7 +19,7 @@ import './Visual.css';
 const LOCALES = ['Nordelta', 'Lomas', 'Belgrano'];
 
 const Visual = () => {
-  const { userData, isAdmin, isManager, isVisual, isLocales } = useAuth();
+  const { userData, roleType, area, isLocales } = useAuth();
   const [tab, setTab] = useState('seguimiento');
   const [visitas, setVisitas] = useState([]);
   const [armados, setArmados] = useState([]);
@@ -29,7 +29,7 @@ const Visual = () => {
   const [modalType, setModalType] = useState('visita');
   const [filtroLocal, setFiltroLocal] = useState('todos');
 
-  const canEdit = isAdmin || isManager || isVisual;
+  const canEdit = roleType === 'superadmin' || roleType === 'coordinador' || roleType === 'visual';
 
   // ── Visitas ────────────────────────────────────────────────────────────────
   useEffect(() => {

@@ -19,12 +19,11 @@ const Login = () => {
     setLoading(true);
 
     const result = await login(username, password);
-    
+
     if (!result.success) {
       setError(result.error || 'Credenciales incorrectas');
       setLoading(false);
     } else {
-      // Login exitoso, redirigir al home
       navigate('/');
     }
   };
@@ -38,9 +37,9 @@ const Login = () => {
         transition={{ duration: 0.5 }}
       >
         <div className="login-header">
-          <img 
-            src="/altorancho. blanco tiza_Mesa de trabajo 1.png" 
-            alt="Altorancho" 
+          <img
+            src="/altorancho. blanco tiza_Mesa de trabajo 1.png"
+            alt="Altorancho"
             className="login-logo"
           />
           <h1>Marketing Workspace</h1>
@@ -75,7 +74,7 @@ const Login = () => {
           </div>
 
           {error && (
-            <motion.div 
+            <motion.div
               className="error-message"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

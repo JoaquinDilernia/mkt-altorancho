@@ -9,7 +9,8 @@ import { es } from 'date-fns/locale';
 import './Home.css';
 
 const Home = () => {
-  const { userData, isAdmin, isManager } = useAuth();
+  const { userData, isAdmin, isCoordinator, isManager } = useAuth();
+  const canManage = isAdmin || isCoordinator;
   const [tareas, setTareas] = useState([]);
   const [eventos, setEventos] = useState([]);
   const [eventosMencionado, setEventosMencionado] = useState([]);
@@ -20,17 +21,22 @@ const Home = () => {
     
     // Manager no ve tareas
     if (!isManager) {
-      const tareasQuery = isAdmin
+      const tareasQuery = canManage
         ? query(collection(db, 'marketingar_tareas'), orderBy('fechaCarga', 'desc'), limit(5))
         : query(
             collection(db, 'marketingar_tareas'),
-            where('asignadoId', '==', userData.id),
-            orderBy('fechaCarga', 'desc'),
-            limit(10)
+            where('asignadoId', '==', userData.id)
           );
 
       unsubTareas = onSnapshot(tareasQuery, (snapshot) => {
-        setTareas(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (!canManage) {
+          // ordenar y limitar client-side para evitar index compuesto
+          docs = docs
+            .sort((a, b) => (b.fechaCarga?.toMillis?.() ?? 0) - (a.fechaCarga?.toMillis?.() ?? 0))
+            .slice(0, 10);
+        }
+        setTareas(docs);
       });
     }
 
@@ -74,7 +80,7 @@ const Home = () => {
       unsubEventos();
       unsubEventosMencion();
     };
-  }, [userData, isAdmin, isManager]);
+  }, [userData, canManage, isManager]);
 
   // Calcular estadísticas
   const [allTareas, setAllTareas] = useState([]);
@@ -96,11 +102,11 @@ const Home = () => {
   }, []);
 
   const misTareas = allTareas.filter(t => t.asignadoId === userData?.id);
-  const tareasActivas = isAdmin 
+  const tareasActivas = canManage
     ? allTareas.filter(t => t.estado !== 'finalizado').length
     : misTareas.filter(t => t.estado !== 'finalizado').length;
-  
-  const tareasCompletadasMes = isAdmin
+
+  const tareasCompletadasMes = canManage
     ? allTareas.filter(t => t.estado === 'finalizado').length
     : misTareas.filter(t => t.estado === 'finalizado').length;
 
@@ -136,8 +142,8 @@ const Home = () => {
       >
         <h1>Hola, {userData?.name}! 👋</h1>
         <p className="welcome-subtitle">
-          {isAdmin 
-            ? 'Panel de administración del equipo de marketing' 
+          {canManage
+            ? 'Panel de administración del equipo'
             : isManager
             ? 'Panel de visualización ejecutiva'
             : 'Bienvenido a tu espacio de trabajo'
@@ -224,7 +230,7 @@ const Home = () => {
             transition={{ delay: 0.4 }}
           >
             <h2>
-              <FiCheckSquare /> {isAdmin ? 'Tareas Recientes' : 'Mis Tareas Pendientes'}
+              <FiCheckSquare /> {canManage ? 'Tareas Recientes' : 'Mis Tareas Pendientes'}
             </h2>
             <div className="tareas-list">
               {tareas.length === 0 ? (
@@ -244,7 +250,7 @@ const Home = () => {
                       </span>
                     </div>
                     <div className="tarea-item-title">{tarea.titulo}</div>
-                    {isAdmin && (
+                    {canManage && (
                       <div className="tarea-item-asignado">
                         Asignado a: {tarea.asignadoNombre}
                       </div>

@@ -15,13 +15,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const unsubscribeRef = useRef(null);
 
-  const startListening = (userId) => {
+  const startListening = (userId, onFirstSnapshot) => {
     if (unsubscribeRef.current) unsubscribeRef.current();
+    let firstFired = false;
     unsubscribeRef.current = onSnapshot(doc(db, 'marketingar_users', userId), (snap) => {
       if (snap.exists()) {
         const updated = { id: snap.id, ...snap.data() };
         localStorage.setItem('marketingar_user', JSON.stringify(updated));
         setUser(updated);
+      }
+      if (!firstFired) {
+        firstFired = true;
+        onFirstSnapshot?.();
       }
     });
   };
@@ -31,48 +36,39 @@ export const AuthProvider = ({ children }) => {
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
       setUser(parsed);
-      startListening(parsed.id);
+      // loading se apaga recién cuando llega el primer snapshot con datos frescos
+      startListening(parsed.id, () => setLoading(false));
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
     return () => { if (unsubscribeRef.current) unsubscribeRef.current(); };
   }, []);
 
   const login = async (username, password) => {
     try {
-      console.log('Intentando login con:', username, password);
-      
       const usersRef = collection(db, 'marketingar_users');
       const q = query(usersRef, where('username', '==', username.toLowerCase().trim()));
-      
-      console.log('Ejecutando query...');
       const querySnapshot = await getDocs(q);
-      console.log('Resultados encontrados:', querySnapshot.size);
-      
+
       if (querySnapshot.empty) {
-        console.error('No se encontró el usuario');
         return { success: false, error: 'Usuario no encontrado' };
       }
-      
+
       const userDoc = querySnapshot.docs[0];
       const userData = { id: userDoc.id, ...userDoc.data() };
-      console.log('Usuario encontrado:', userData);
-      
-      // Verificar password y que esté activo
+
       if (userData.password !== password.trim()) {
-        console.error('Contraseña incorrecta');
         return { success: false, error: 'Contraseña incorrecta' };
       }
-      
+
       if (!userData.active) {
-        console.error('Usuario inactivo');
         return { success: false, error: 'Usuario inactivo' };
       }
-      
-      // Guardar en localStorage
+
       localStorage.setItem('marketingar_user', JSON.stringify(userData));
       setUser(userData);
       startListening(userData.id);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error en login:', error);
@@ -93,13 +89,21 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    isAdmin: user?.role === 'admin',
-    isManager: user?.role === 'manager',
-    isCoordinator: user?.role === 'manager',
-    canEdit: user?.role === 'admin',
-    isProducto: user?.role === 'producto',
-    isVisual: user?.role === 'visual',
-    isLocales: user?.role === 'locales',
+    // ── Sistema de roles ───────────────────────────────────────────────────
+    // roleType: 'superadmin' | 'coordinador' | 'directivo'
+    //         | 'asistente' | 'community' | 'pauta' | 'atencion_cliente'
+    //         | 'diseno' | 'visual' | 'producto' | 'local'
+    // area:    'marketing' | 'producto' | 'locales'
+    roleType: user?.roleType ?? null,
+    area:     user?.area     ?? null,
+    // ── Booleanos derivados ────────────────────────────────────────────────
+    isAdmin:       user?.roleType === 'superadmin',
+    isCoordinator: user?.roleType === 'coordinador',
+    isManager:     user?.roleType === 'directivo',
+    canEdit:       user?.roleType === 'superadmin' || user?.roleType === 'coordinador',
+    isProducto:    user?.area === 'producto',
+    isVisual:      user?.roleType === 'visual',
+    isLocales:     user?.area === 'locales',
   };
 
   return (

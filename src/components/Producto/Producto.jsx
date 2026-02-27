@@ -60,7 +60,7 @@ function obsStyle(obs) {
 }
 
 const Producto = () => {
-  const { userData, isAdmin, isManager, isProducto } = useAuth();
+  const { userData, isAdmin, isCoordinator, area } = useAuth();
   const [tab, setTab] = useState('catalogo');
 
   // ── Catálogo ───────────────────────────────────────────────────────────────
@@ -83,8 +83,8 @@ const Producto = () => {
   const [loadingColecciones, setLoadingColecciones] = useState(true);
   const [showColModal, setShowColModal] = useState(false);
 
-  const canEdit   = isAdmin || isManager || isProducto;
-  const canUpload = isAdmin || isProducto;
+  const canEdit   = isAdmin || isCoordinator || area === 'producto';
+  const canUpload = isAdmin || area === 'producto';
 
   useEffect(() => {
     const q = query(collection(db, COLL_PRODUCTOS), orderBy('nombre', 'asc'));

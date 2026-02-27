@@ -1,0 +1,477 @@
+.perfil-container {
+  padding: 32px;
+  max-width: 800px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.perfil-header {
+  margin-bottom: 24px;
+}
+
+.perfil-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #353434;
+}
+
+.perfil-header .subtitle {
+  color: #666;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.perfil-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.perfil-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.perfil-tabs button.active {
+  color: #353434;
+  border-bottom-color: #462829;
+  font-weight: 600;
+}
+
+.perfil-tabs button:hover:not(.active) {
+  color: #353434;
+  background: #f9fafb;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.perfil-card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+}
+
+/* ── Avatar section ──────────────────────────────────────────────────────── */
+.perfil-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.perfil-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.perfil-avatar-img {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #e6d7b3;
+}
+
+.perfil-avatar-placeholder {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #462829, #353434);
+  color: #e6d7b3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  border: 3px solid #e6d7b3;
+}
+
+.perfil-avatar-upload {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 30px;
+  height: 30px;
+  background: #462829;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+  border: 2px solid white;
+}
+
+.perfil-avatar-upload:hover {
+  background: #353434;
+}
+
+.perfil-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.perfil-username {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.perfil-role-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge.role-badge {
+  background: #353434;
+  color: #e6d7b3;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge.area-badge {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────── */
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-group input {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  transition: border-color 0.2s;
+  background: white;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #462829;
+}
+
+.perfil-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.perfil-msg {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.perfil-msg.success { color: #10b981; }
+.perfil-msg.error  { color: #ef4444; }
+
+/* ── Disponibilidad ──────────────────────────────────────────────────────── */
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #353434;
+  margin: 0 0 4px 0;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 20px 0;
+}
+
+.disponibilidad-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.disponibilidad-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.disponibilidad-row:not(.inactivo) {
+  background: #fff;
+}
+
+.disponibilidad-row.inactivo {
+  opacity: 0.55;
+}
+
+.disp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  min-width: 130px;
+}
+
+.disp-toggle input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: #462829;
+}
+
+.disp-dia {
+  font-weight: 600;
+  font-size: 14px;
+  color: #353434;
+}
+
+.disp-horario {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.disp-horario input[type="time"] {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #353434;
+}
+
+.disp-horario input[type="time"]:focus {
+  outline: none;
+  border-color: #462829;
+}
+
+.disp-a {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.disp-no-disponible {
+  color: #9ca3af;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Excepciones ─────────────────────────────────────────────────────────── */
+.excepciones-section {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 28px;
+  margin-bottom: 28px;
+}
+
+.excepcion-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.excepcion-add input[type="date"],
+.excepcion-select,
+.excepcion-motivo {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  color: #353434;
+}
+
+.excepcion-add input[type="date"]:focus,
+.excepcion-select:focus,
+.excepcion-motivo:focus {
+  outline: none;
+  border-color: #462829;
+}
+
+.excepcion-motivo {
+  flex: 1;
+  min-width: 160px;
+}
+
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.excepciones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.excepcion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.excepcion-item.disponible {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+}
+
+.excepcion-item.no-disponible {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+.exc-fecha {
+  font-weight: 700;
+  min-width: 80px;
+}
+
+.exc-estado {
+  font-weight: 600;
+}
+
+.exc-motivo {
+  opacity: 0.75;
+  flex: 1;
+}
+
+.excepcion-item .btn-icon {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  opacity: 0.6;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.excepcion-item .btn-icon:hover {
+  opacity: 1;
+  background: rgba(0,0,0,0.06);
+}
+
+.excepciones-empty {
+  color: #9ca3af;
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* ── btn-primary (mirrored from otros componentes) ───────────────────────── */
+.btn-primary {
+  background: #353434;
+  color: #e6d7b3;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover { background: #462829; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .perfil-container {
+    padding: 16px;
+  }
+
+  .perfil-card {
+    padding: 20px;
+  }
+
+  .perfil-avatar-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .disponibilidad-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .excepcion-add {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .excepcion-motivo {
+    min-width: 100%;
+  }
+
+  .perfil-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .perfil-tabs button {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+}

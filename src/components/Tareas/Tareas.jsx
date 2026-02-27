@@ -20,7 +20,8 @@ import {
 import './Tareas.css';
 
 const Tareas = () => {
-  const { userData, isAdmin, isCoordinator } = useAuth();
+  const { userData, isAdmin, isCoordinator, area } = useAuth();
+  const canManage = isAdmin || isCoordinator; // puede ver/asignar todas las tareas
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +51,7 @@ const Tareas = () => {
 
   useEffect(() => {
     let q;
-    if (isAdmin) {
+    if (canManage) {
       q = query(
         collection(db, 'marketingar_tareas'),
         orderBy('fechaCarga', 'desc')
@@ -58,8 +59,8 @@ const Tareas = () => {
     } else {
       q = query(
         collection(db, 'marketingar_tareas'),
-        where('asignadoId', '==', userData.id),
-        orderBy('fechaCarga', 'desc')
+        where('asignadoId', '==', userData.id)
+        // sin orderBy: el sort client-side en filteredTareas ya ordena por fechaCarga
       );
     }
 
@@ -73,23 +74,33 @@ const Tareas = () => {
     });
 
     return () => unsubscribe();
-  }, [isAdmin, userData]);
+  }, [canManage, userData]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canManage) {
       const q = query(collection(db, 'marketingar_users'), where('active', '==', true));
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const usersData = snapshot.docs.map(doc => ({
+        let usersData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Coordinador: solo ve los usuarios de su área
+        if (isCoordinator && area) {
+          usersData = usersData.filter(u => u.area === area);
+        }
         setUsuarios(usersData);
       });
       return () => unsubscribe();
     }
-  }, [isAdmin]);
+  }, [canManage, isCoordinator, area]);
+
+  const areaUserIds = isCoordinator && area
+    ? new Set(usuarios.filter(u => u.area === area).map(u => u.id))
+    : null;
 
   const filteredTareas = tareas.filter(tarea => {
+    // Coordinador: solo tareas de usuarios de su área
+    if (areaUserIds && !areaUserIds.has(tarea.asignadoId)) return false;
     const matchStatus = filterStatus === 'all' || tarea.estado === filterStatus;
     const matchUrgencia = filterUrgencia === 'all' || tarea.urgencia === filterUrgencia;
     const matchUsuario = filterUsuario === 'all' || tarea.asignadoId === filterUsuario;
@@ -143,7 +154,7 @@ const Tareas = () => {
         <div>
           <h1>Gestión de Tareas</h1>
           <p className="subtitle">
-            {isAdmin ? 'Todas las tareas del equipo' : 'Mis tareas asignadas'}
+            {canManage ? 'Todas las tareas del equipo' : 'Mis tareas asignadas'}
           </p>
         </div>
         <motion.button
@@ -152,7 +163,7 @@ const Tareas = () => {
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowModal(true)}
         >
-          <FiPlus /> {isAdmin ? 'Nueva Tarea' : 'Nueva Tarea Personal'}
+          <FiPlus /> {canManage ? 'Nueva Tarea' : 'Nueva Tarea Personal'}
         </motion.button>
       </div>
 
@@ -169,8 +180,8 @@ const Tareas = () => {
 
         {/* Filtros adicionales */}
         <div className="filtros-extra">
-          {isAdmin && (
-            <select 
+          {canManage && (
+            <select
               value={filterUsuario}
               onChange={(e) => setFilterUsuario(e.target.value)}
               className="filtro-select"
@@ -178,13 +189,13 @@ const Tareas = () => {
               <option value="all">Todos los usuarios</option>
               {usuarios.map(user => (
                 <option key={user.id} value={user.id}>
-                  {user.name} - {user.areas?.[0]}
+                  {user.name}
                 </option>
               ))}
             </select>
           )}
-          
-          {!isAdmin && (
+
+          {!canManage && (
             <>
               <select 
                 value={filterUrgencia}
@@ -241,8 +252,7 @@ const Tareas = () => {
               tarea={tarea}
               getEstadoColor={getEstadoColor}
               getUrgenciaColor={getUrgenciaColor}
-              isAdmin={isAdmin}
-              isCoordinator={isCoordinator}
+              canManage={canManage}
               onEdit={(tarea) => {
                 setEditingTarea(tarea);
                 setShowModal(true);
@@ -277,7 +287,7 @@ const Tareas = () => {
   );
 };
 
-const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, isAdmin, isCoordinator, onEdit, onDelete }) => {
+const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, canManage, onEdit, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const [showHistorial, setShowHistorial] = useState(false);
 
@@ -334,9 +344,9 @@ const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, isAdmin, isCoordin
           <button className="btn-icon" onClick={() => onEdit(tarea)}>
             <FiEdit2 />
           </button>
-          {(isAdmin || isCoordinator) && (
-            <button 
-              className="btn-icon btn-delete" 
+          {canManage && (
+            <button
+              className="btn-icon btn-delete"
               onClick={() => onDelete(tarea.id, tarea.titulo)}
               title="Eliminar tarea"
             >
@@ -348,7 +358,7 @@ const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, isAdmin, isCoordin
 
       <h3 className="tarea-titulo">{tarea.titulo}</h3>
       
-      {isAdmin && (
+      {canManage && (
         <p className="tarea-asignado">
           Asignado a: <strong>{tarea.asignadoNombre}</strong>
         </p>
@@ -378,7 +388,7 @@ const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, isAdmin, isCoordin
         </div>
       )}
 
-      {isAdmin && tarea.notasInternas && (
+      {canManage && tarea.notasInternas && (
         <div className="tarea-notas">
           <strong>Notas internas:</strong>
           <p>{tarea.notasInternas}</p>
@@ -479,15 +489,16 @@ const HistorialModal = ({ historial, titulo, onClose, formatDateTime }) => {
 };
 
 const NuevaTareaModal = ({ onClose, estados, urgencias, tarea }) => {
-  const { isAdmin, userData } = useAuth();
+  const { isAdmin, isCoordinator, userData, area } = useAuth();
+  const canManage = isAdmin || isCoordinator;
   const [usuarios, setUsuarios] = useState([]);
   const [formData, setFormData] = useState(tarea ? {
     ...tarea,
     fechaEntrega: tarea.fechaEntrega ? formatDateForInput(tarea.fechaEntrega) : ''
   } : {
     titulo: '',
-    asignadoId: isAdmin ? '' : userData.id,
-    asignadoNombre: isAdmin ? '' : userData.name,
+    asignadoId: canManage ? '' : userData.id,
+    asignadoNombre: canManage ? '' : userData.name,
     fechaEntrega: '',
     urgencia: 'media',
     estado: 'pedido',
@@ -497,23 +508,27 @@ const NuevaTareaModal = ({ onClose, estados, urgencias, tarea }) => {
   const [notaCambio, setNotaCambio] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Si no es admin y está editando, solo mostrar modal simple de cambio de estado
-  const modoSimple = !isAdmin && tarea;
+  // Modal simple para usuarios sin permisos de gestión editando una tarea existente
+  const modoSimple = !canManage && tarea;
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canManage) {
       const unsubscribe = onSnapshot(
         query(collection(db, 'marketingar_users'), where('active', '==', true)),
         (snapshot) => {
-          const users = snapshot.docs
+          let users = snapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(u => u.role !== 'admin');
+            .filter(u => u.roleType !== 'superadmin');
+          // Coordinador: solo asigna a su área
+          if (isCoordinator && area) {
+            users = users.filter(u => u.area === area);
+          }
           setUsuarios(users);
         }
       );
       return () => unsubscribe();
     }
-  }, [isAdmin]);
+  }, [canManage, isCoordinator, area]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -680,7 +695,7 @@ const NuevaTareaModal = ({ onClose, estados, urgencias, tarea }) => {
           <div className="form-row">
             <div className="form-group">
               <label>Asignar a *</label>
-              {isAdmin ? (
+              {canManage ? (
                 <select
                   value={formData.asignadoId}
                   onChange={handleUsuarioChange}
@@ -689,7 +704,7 @@ const NuevaTareaModal = ({ onClose, estados, urgencias, tarea }) => {
                   <option value="">Seleccionar usuario</option>
                   {usuarios.map(user => (
                     <option key={user.id} value={user.id}>
-                      {user.name} - {user.areas?.[0]}
+                      {user.name}
                     </option>
                   ))}
                 </select>

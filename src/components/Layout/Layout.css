@@ -26,42 +26,40 @@
 }
 
 .sidebar-header {
-  padding: 24px 20px;
+  padding: 24px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  min-height: 80px;
+  min-height: 88px;
 }
 
 .sidebar-logo {
-  width: 40px;
-  height: 40px;
   object-fit: contain;
+  transition: width 0.3s ease, height 0.3s ease;
 }
 
-.sidebar-title {
-  font-size: 20px;
-  font-weight: 700;
-  white-space: nowrap;
-  color: #e6d7b3;
+.sidebar.open .sidebar-logo {
+  width: 120px;
+  height: 60px;
 }
 
-.sidebar.closed .sidebar-title {
-  display: none;
+.sidebar.closed .sidebar-logo {
+  width: 36px;
+  height: 36px;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 20px 0;
+  padding: 10px 0;
   overflow-y: auto;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 20px;
+  gap: 11px;
+  padding: 10px 18px;
   color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   transition: all 0.2s ease;
@@ -69,7 +67,7 @@
   border: none;
   background: none;
   width: 100%;
-  font-size: 15px;
+  font-size: 14px;
   border-left: 3px solid transparent;
 }
 
@@ -85,8 +83,8 @@
 }
 
 .nav-icon {
-  font-size: 22px;
-  min-width: 22px;
+  font-size: 18px;
+  min-width: 18px;
 }
 
 .sidebar.closed .nav-item span {
@@ -95,12 +93,46 @@
 
 .sidebar.closed .nav-item {
   justify-content: center;
-  padding: 14px;
+  padding: 10px;
+}
+
+.nav-separator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px 2px;
+  margin-top: 2px;
+}
+
+.nav-separator::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-separator span {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+}
+
+.sidebar.closed .nav-separator {
+  padding: 8px 0;
+  justify-content: center;
+}
+
+.sidebar.closed .nav-separator::before {
+  flex: none;
+  width: 24px;
 }
 
 .sidebar-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 20px 0;
+  padding: 10px 0;
 }
 
 .logout-btn {
@@ -192,6 +224,28 @@
   font-size: 12px;
   color: #462829;
   opacity: 0.7;
+}
+
+.user-info-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  transition: background 0.2s;
+}
+
+.user-info-link:hover {
+  background: #f5f5f5;
+}
+
+.user-avatar-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .content {

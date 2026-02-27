@@ -12,10 +12,6 @@ import {
 } from 'react-icons/fi';
 import './Pauta.css';
 
-const PAUTA_USERS = ['sofia', 'cami', 'vicky', 'juli', 'santiago ribatto'];
-const PAUTA_TASKS_USERS = ['sofia', 'cami', 'vicky', 'juli'];
-const PAUTA_STATS_USERS = ['sofia', 'cami', 'santiago ribatto'];
-
 const CANALES = ['google', 'tiktok', 'metaAds', 'pinterest', 'mercadolibre'];
 const CANALES_LABELS = {
   google: 'Google',
@@ -26,15 +22,14 @@ const CANALES_LABELS = {
 };
 
 const ESTADOS = {
-  planificado: { label: 'Planificado', color: '#6c757d', next: 'Subir piezas (Juli)' },
-  en_diseno: { label: 'Piezas cargadas', color: '#fd7e14', next: 'Cargar copies (Vicky)' },
-  copy_listo: { label: 'Copy listo', color: '#0d6efd', next: 'Confirmar publicación (Cami)' },
-  publicado: { label: 'Publicado', color: '#198754', next: null },
+  planificado: { label: 'Planificado',    color: '#6c757d', next: 'Subir piezas (Diseño)' },
+  en_diseno:   { label: 'Piezas cargadas', color: '#fd7e14', next: 'Cargar copies (Community)' },
+  copy_listo:  { label: 'Copy listo',      color: '#0d6efd', next: 'Confirmar publicación (Pauta)' },
+  publicado:   { label: 'Publicado',       color: '#198754', next: null },
 };
 
 const Pauta = () => {
-  const { userData } = useAuth();
-  const username = userData?.username;
+  const { userData, roleType, area } = useAuth();
   const [mesActual, setMesActual] = useState(new Date());
   const [campanas, setCampanas] = useState([]);
   const [inversion, setInversion] = useState(null);
@@ -44,14 +39,16 @@ const Pauta = () => {
   const [campanaActiva, setCampanaActiva] = useState(null);
   const [campanaEditando, setCampanaEditando] = useState(null);
 
-  const canSeeCampanas = PAUTA_TASKS_USERS.includes(username);
-  const canSeeStats = PAUTA_STATS_USERS.includes(username);
-  const canCreateCampana = username === 'sofia';
-  const canUploadAssets = username === 'juli';
-  const canAddCopy = username === 'vicky';
-  const canConfirmPublicacion = username === 'cami';
-  const canSetInversion = ['santiago ribatto', 'cami'].includes(username);
-  const canUpdateConsumo = ['santiago ribatto', 'cami'].includes(username);
+  // Permisos basados en rol y área — sin nombres hardcodeados
+  const esMktg         = roleType === 'superadmin' || area === 'marketing';
+  const canSeeCampanas = esMktg;
+  const canSeeStats    = esMktg;
+  const canCreateCampana    = roleType === 'superadmin' || roleType === 'coordinador';
+  const canUploadAssets     = roleType === 'diseno';
+  const canAddCopy          = roleType === 'community';
+  const canConfirmPublicacion = roleType === 'pauta';
+  const canSetInversion     = roleType === 'superadmin' || roleType === 'coordinador';
+  const canUpdateConsumo    = roleType === 'pauta' || roleType === 'superadmin' || roleType === 'coordinador';
 
   // Set default tab on mount
   useEffect(() => {
@@ -59,10 +56,10 @@ const Pauta = () => {
       if (canSeeCampanas) setActiveTab('campanas');
       else if (canSeeStats) setActiveTab('inversion');
     }
-  }, [username]); // eslint-disable-line
+  }, [roleType]); // eslint-disable-line
 
-  // Access guard
-  if (!PAUTA_USERS.includes(username)) {
+  // Access guard: solo área marketing y superadmin
+  if (!esMktg) {
     return (
       <div className="pauta-no-access">
         <FiLock size={48} />
@@ -279,7 +276,7 @@ const Pauta = () => {
                 </button>
               )}
               {!canCreateCampana && (
-                <p className="pauta-hint">Sofi tiene que cargar las campañas del mes.</p>
+                <p className="pauta-hint">La coordinadora tiene que cargar las campañas del mes.</p>
               )}
             </div>
           ) : (
@@ -407,7 +404,7 @@ const Pauta = () => {
         {campanaActiva && (
           <StepModal
             campana={campanaActiva}
-            username={username}
+            roleType={roleType}
             onClose={() => setCampanaActiva(null)}
             onAvanzar={handleAvanzarEstado}
           />
@@ -537,7 +534,7 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
         </motion.div>
       </div>
 
-      {/* Santi: set investment & billing goal */}
+      {/* Coordinador: set investment & billing goal */}
       {canSetInversion && (
         <div className="inversion-card">
           <div className="inversion-card-header">
@@ -620,7 +617,7 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
         </div>
       )}
 
-      {/* Cami: update consumption */}
+      {/* Pauta: update consumption */}
       {canUpdateConsumo && (
         <div className="inversion-card">
           <div className="inversion-card-header">
@@ -647,7 +644,7 @@ const InversionSection = ({ inversion, canSetInversion, canUpdateConsumo, onSave
         </div>
       )}
 
-      {/* Sofi: read-only view */}
+      {/* Vista de solo lectura para el resto del área */}
       {!canSetInversion && !canUpdateConsumo && (
         <div className="inversion-card">
           <div className="inversion-card-header">
@@ -858,25 +855,25 @@ const EditarCampanaModal = ({ campana, onClose, onEditar }) => {
   );
 };
 
-// ─── Step Modal (Juli / Vicky / Cami) ────────────────────────────────────────
-const StepModal = ({ campana, username, onClose, onAvanzar }) => {
+// ─── Step Modal (Diseño / Community / Pauta) ────────────────────────────────
+const StepModal = ({ campana, roleType, onClose, onAvanzar }) => {
   const [texto, setTexto] = useState('');
-  const isJuli = username === 'juli';
-  const isVicky = username === 'vicky';
-  const isCami = username === 'cami';
+  const isDiseno    = roleType === 'diseno';
+  const isCommunity = roleType === 'community';
+  const isPauta     = roleType === 'pauta';
 
-  const title = isJuli ? 'Subir piezas' : isVicky ? 'Cargar copy' : 'Confirmar publicación';
-  const nextState = isJuli ? 'en_diseno' : isVicky ? 'copy_listo' : 'publicado';
-  const field = isJuli ? 'archivos' : isVicky ? 'copys' : 'notasPublicacion';
-  const placeholder = isJuli
+  const title       = isDiseno ? 'Subir piezas' : isCommunity ? 'Cargar copy' : 'Confirmar publicación';
+  const nextState   = isDiseno ? 'en_diseno'   : isCommunity ? 'copy_listo'  : 'publicado';
+  const field       = isDiseno ? 'archivos'    : isCommunity ? 'copys'       : 'notasPublicacion';
+  const placeholder = isDiseno
     ? 'Pegá el link de la carpeta o describí los archivos subidos...'
-    : isVicky
+    : isCommunity
     ? 'Escribí el copy para esta campaña...'
     : 'Notas de publicación (opcional)...';
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isCami && !texto.trim()) {
+    if (!isPauta && !texto.trim()) {
       alert('Completá el campo antes de continuar');
       return;
     }
@@ -908,21 +905,21 @@ const StepModal = ({ campana, username, onClose, onAvanzar }) => {
           <form onSubmit={handleSubmit} className="modal-form">
             <div className="form-group">
               <label>
-                {isJuli ? 'Link / descripción de piezas' : isVicky ? 'Copy' : 'Notas de publicación'}
-                {!isCami && ' *'}
+                {isDiseno ? 'Link / descripción de piezas' : isCommunity ? 'Copy' : 'Notas de publicación'}
+                {!isPauta && ' *'}
               </label>
               <textarea
                 value={texto}
                 onChange={e => setTexto(e.target.value)}
                 placeholder={placeholder}
                 rows={5}
-                required={!isCami}
+                required={!isPauta}
               />
             </div>
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
               <button type="submit" className="btn-primary">
-                <FiCheck /> {isCami ? 'Confirmar publicación' : 'Guardar y continuar'}
+                <FiCheck /> {isPauta ? 'Confirmar publicación' : 'Guardar y continuar'}
               </button>
             </div>
           </form>

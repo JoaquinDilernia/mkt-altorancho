@@ -9,21 +9,22 @@ import { es } from 'date-fns/locale';
 import './Objetivos.css';
 
 const Objetivos = () => {
-  const { userData, isAdmin, isManager } = useAuth();
+  const { userData, isAdmin, isCoordinator, area } = useAuth();
+  const canManage = isAdmin || isCoordinator;
+  const canEdit = canManage;
   const [objetivos, setObjetivos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [mesActual, setMesActual] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [showNuevoObjetivo, setShowNuevoObjetivo] = useState(false);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
-  const canEdit = isAdmin && !isManager; // Manager solo puede ver
+
   useEffect(() => {
     const inicio = startOfMonth(mesActual);
     const fin = endOfMonth(mesActual);
 
     let q;
-    if (isAdmin || isManager) {
-      // Admin y Manager ven todos los objetivos
+    if (canManage) {
       q = query(
         collection(db, 'marketingar_objetivos'),
         where('mes', '>=', inicio),
@@ -48,27 +49,31 @@ const Objetivos = () => {
     });
 
     return () => unsubscribe();
-  }, [mesActual, isAdmin, isManager, userData]);
+  }, [mesActual, canManage, userData]);
 
   useEffect(() => {
-    if (isAdmin || isManager) {
+    if (canManage) {
       const q = query(collection(db, 'marketingar_users'), where('active', '==', true));
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const usersData = snapshot.docs.map(doc => ({
+        let usersData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        // Coordinador: solo ve usuarios de su área
+        if (isCoordinator && area) {
+          usersData = usersData.filter(u => u.area === area);
+        }
         setUsuarios(usersData);
       });
       return () => unsubscribe();
     }
-  }, [isAdmin, isManager]);
+  }, [canManage, isCoordinator, area]);
 
   const objetivoMesActual = objetivos.find(obj => {
     const objMes = obj.mes.toDate ? obj.mes.toDate() : new Date(obj.mes);
     const mesCoincide = format(objMes, 'MM-yyyy') === format(mesActual, 'MM-yyyy');
-    
-    if ((isAdmin || isManager) && usuarioSeleccionado) {
+
+    if (canManage && usuarioSeleccionado) {
       return mesCoincide && obj.usuarioId === usuarioSeleccionado;
     }
     return mesCoincide && obj.usuarioId === userData.id;
@@ -134,7 +139,7 @@ const Objetivos = () => {
   };
 
   const handleToggleCondicion = async (condicionIndex) => {
-    if (!isAdmin || !objetivoMesActual) return;
+    if (!canEdit || !objetivoMesActual) return;
 
     const condicionesActualizadas = [...objetivoMesActual.condiciones];
     condicionesActualizadas[condicionIndex].cumplida = !condicionesActualizadas[condicionIndex].cumplida;
@@ -152,7 +157,7 @@ const Objetivos = () => {
   };
 
   const handleAprobarBono = async () => {
-    if (!isAdmin || !objetivoMesActual) return;
+    if (!canEdit || !objetivoMesActual) return;
 
     if (!objetivoMesActual.cumplido) {
       alert('No se puede aprobar el bono porque no se cumplieron todas las condiciones');
@@ -171,7 +176,7 @@ const Objetivos = () => {
   };
 
   const handleUpdateObservaciones = async (texto) => {
-    if (!isAdmin || !objetivoMesActual) return;
+    if (!canEdit || !objetivoMesActual) return;
 
     try {
       await updateDoc(doc(db, 'marketingar_objetivos', objetivoMesActual.id), {
@@ -186,7 +191,7 @@ const Objetivos = () => {
     return <div className="loading">Cargando objetivos...</div>;
   }
 
-  const usuarioActual = isAdmin && usuarioSeleccionado 
+  const usuarioActual = canManage && usuarioSeleccionado
     ? usuarios.find(u => u.id === usuarioSeleccionado)
     : { name: userData.name };
 
@@ -196,12 +201,12 @@ const Objetivos = () => {
         <div>
           <h1>Objetivos y Bonos</h1>
           <p className="subtitle">
-            {isAdmin ? 'Gestión de objetivos del equipo' : 'Mis objetivos personales'}
+            {canManage ? 'Gestión de objetivos del equipo' : 'Mis objetivos personales'}
           </p>
         </div>
         <div className="header-actions">
-          {(isAdmin || isManager) && (
-            <select 
+          {canManage && (
+            <select
               className="usuario-selector"
               value={usuarioSeleccionado || ''}
               onChange={(e) => setUsuarioSeleccionado(e.target.value)}
@@ -209,7 +214,7 @@ const Objetivos = () => {
               <option value="">Seleccionar usuario...</option>
               {usuarios.map(user => (
                 <option key={user.id} value={user.id}>
-                  {user.name} - {user.areas?.[0]}
+                  {user.name}{user.especialidad ? ` (${user.especialidad})` : ''}
                 </option>
               ))}
             </select>
@@ -243,7 +248,7 @@ const Objetivos = () => {
         >
           <FiAlertCircle />
           <h3>
-            {(isAdmin || isManager) && !usuarioSeleccionado 
+            {canManage && !usuarioSeleccionado
               ? 'Selecciona un usuario para ver o crear objetivos'
               : `No hay objetivos para ${usuarioActual?.name} en este mes`}
           </h3>
@@ -359,7 +364,7 @@ const Objetivos = () => {
       >
         <h3>Historial de Objetivos</h3>
         <div className="historial-grid">
-          {objetivos.filter(obj => !isAdmin || !usuarioSeleccionado || obj.usuarioId === usuarioSeleccionado).map(obj => {
+          {objetivos.filter(obj => !canManage || !usuarioSeleccionado || obj.usuarioId === usuarioSeleccionado).map(obj => {
             const mes = obj.mes.toDate ? obj.mes.toDate() : new Date(obj.mes);
             const condicionesCumplidas = (obj.condiciones || []).filter(c => c.cumplida).length;
             const totalCondiciones = (obj.condiciones || []).length;
@@ -476,7 +481,7 @@ const NuevoObjetivoModal = ({ onClose, onCreate, usuarios, usuarioSeleccionado, 
               <option value="">Seleccionar...</option>
               {usuarios.map(user => (
                 <option key={user.id} value={user.id}>
-                  {user.name} - {user.areas?.[0]}
+                  {user.name}{user.especialidad ? ` (${user.especialidad})` : ''}
                 </option>
               ))}
             </select>

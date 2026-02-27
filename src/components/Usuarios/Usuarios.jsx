@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, updateDoc, doc, deleteDoc, where } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiUsers, FiX, FiSave, FiUserCheck, FiUserX } from 'react-icons/fi';
+import {
+  MANAGEMENT_ROLES,
+  ROLE_LABELS, AREA_LABELS,
+  SECCIONES_POR_AREA, puedeGestionarUsuario
+} from '../../utils/roles';
 import './Usuarios.css';
 
 const Usuarios = () => {
+  const { userData, isAdmin, isCoordinator, area: myArea } = useAuth();
+  const canManage = isAdmin || isCoordinator;
   const [usuarios, setUsuarios] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -15,14 +23,17 @@ const Usuarios = () => {
     const unsubscribe = onSnapshot(
       query(collection(db, 'marketingar_users')),
       (snapshot) => {
-        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Coordinador: solo ve usuarios de su área + superadmin
+        if (isCoordinator && myArea) {
+          users = users.filter(u => u.area === myArea || u.roleType === 'superadmin');
+        }
         setUsuarios(users);
         setLoading(false);
       }
     );
-
     return () => unsubscribe();
-  }, []);
+  }, [isCoordinator, myArea]);
 
   const handleEdit = (usuario) => {
     setEditingUser(usuario);
@@ -52,7 +63,7 @@ const Usuarios = () => {
   };
 
   const usuariosActivos = usuarios.filter(u => u.active).length;
-  const admins = usuarios.filter(u => u.role === 'admin').length;
+  const admins = usuarios.filter(u => u.roleType === 'superadmin').length;
 
   if (loading) {
     return <div className="loading">Cargando usuarios...</div>;
@@ -64,7 +75,7 @@ const Usuarios = () => {
         <div>
           <h1>Gestión de Usuarios</h1>
           <p className="subtitle">
-            {usuarios.length} usuarios totales · {usuariosActivos} activos · {admins} administradores
+            {usuarios.length} usuarios · {usuariosActivos} activos · {admins} superadmin
           </p>
         </div>
         <motion.button
@@ -81,108 +92,106 @@ const Usuarios = () => {
       </div>
 
       <div className="usuarios-grid">
-        {usuarios.map((usuario) => (
-          <motion.div
-            key={usuario.id}
-            className={`usuario-card ${!usuario.active ? 'inactive' : ''}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            layout
-          >
-            <div className="usuario-card-header">
-              <div className="usuario-avatar-large">
-                {usuario.name?.charAt(0)?.toUpperCase()}
-              </div>
-              <div className="usuario-actions">
-                <button 
-                  className="btn-icon" 
-                  onClick={() => handleEdit(usuario)}
-                  title="Editar"
-                >
-                  <FiEdit2 />
-                </button>
-                <button 
-                  className="btn-icon" 
-                  onClick={() => handleToggleActive(usuario)}
-                  title={usuario.active ? 'Desactivar' : 'Activar'}
-                >
-                  {usuario.active ? <FiUserCheck /> : <FiUserX />}
-                </button>
-                {usuario.role !== 'admin' && (
-                  <button 
-                    className="btn-icon danger" 
-                    onClick={() => handleDelete(usuario.id)}
-                    title="Eliminar"
-                  >
-                    <FiTrash2 />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="usuario-card-body">
-              <h3>{usuario.name}</h3>
-              <div className="usuario-username">@{usuario.username}</div>
-              
-              <div className="usuario-badges">
-                <span className={`badge ${usuario.role === 'admin' ? 'admin' : usuario.role === 'manager' ? 'manager' : 'user'}`}>
-                  {usuario.role === 'admin' ? 'Administrador' :
-                   usuario.role === 'manager' ? 'Dirección' :
-                   usuario.role === 'producto' ? 'Producto' :
-                   usuario.role === 'visual' ? 'Visual' :
-                   usuario.role === 'locales' ? 'Locales' :
-                   'Usuario'}
-                </span>
-                {usuario.partTime && (
-                  <span className="badge parttime">Part Time</span>
-                )}
-                {!usuario.active && (
-                  <span className="badge inactive-badge">Inactivo</span>
-                )}
-              </div>
-
-              {usuario.areas && usuario.areas.length > 0 && (
-                <div className="usuario-areas">
-                  <strong>Áreas:</strong>
-                  <ul>
-                    {usuario.areas.map((area, index) => (
-                      <li key={index}>{area}</li>
-                    ))}
-                  </ul>
+        {usuarios.map((usuario) => {
+          const canDelete = puedeGestionarUsuario(userData, usuario) && usuario.roleType !== 'superadmin';
+          return (
+            <motion.div
+              key={usuario.id}
+              className={`usuario-card ${!usuario.active ? 'inactive' : ''}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              layout
+            >
+              <div className="usuario-card-header">
+                <div className="usuario-avatar-large">
+                  {usuario.name?.charAt(0)?.toUpperCase()}
                 </div>
-              )}
-
-              {usuario.role !== 'admin' && usuario.role !== 'manager' && usuario.secciones && usuario.secciones.length > 0 && (
-                <div className="usuario-areas" style={{ marginTop: '8px' }}>
-                  <strong>Vistas:</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                    {usuario.secciones.map((s) => (
-                      <span key={s} className="badge user" style={{ fontSize: '11px' }}>
-                        {s.replace('_', ' ')}
-                      </span>
-                    ))}
-                  </div>
+                <div className="usuario-actions">
+                  {canManage && (
+                    <button
+                      className="btn-icon"
+                      onClick={() => handleEdit(usuario)}
+                      title="Editar"
+                    >
+                      <FiEdit2 />
+                    </button>
+                  )}
+                  {canManage && (
+                    <button
+                      className="btn-icon"
+                      onClick={() => handleToggleActive(usuario)}
+                      title={usuario.active ? 'Desactivar' : 'Activar'}
+                    >
+                      {usuario.active ? <FiUserCheck /> : <FiUserX />}
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      className="btn-icon danger"
+                      onClick={() => handleDelete(usuario.id)}
+                      title="Eliminar"
+                    >
+                      <FiTrash2 />
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
 
-              {usuario.diasLaborales && (
-                <div className="usuario-schedule">
-                  <strong>Horario Semanal:</strong>
-                  <div className="schedule-mini">
-                    {Object.entries(usuario.diasLaborales).map(([dia, tipo]) => {
-                      if (tipo === 'franco') return null;
-                      return (
-                        <span key={dia} className={`schedule-badge ${tipo}`}>
-                          {dia.slice(0, 3).toUpperCase()}: {tipo === 'oficina' ? '🏢' : '🏠'}
+              <div className="usuario-card-body">
+                <h3>{usuario.name}</h3>
+                <div className="usuario-username">@{usuario.username}</div>
+
+                <div className="usuario-badges">
+                  {usuario.roleType && (
+                    <span className={`badge ${usuario.roleType === 'superadmin' ? 'admin' : usuario.roleType === 'coordinador' ? 'manager' : 'user'}`}>
+                      {ROLE_LABELS[usuario.roleType] || usuario.roleType}
+                    </span>
+                  )}
+                  {usuario.area && (
+                    <span className="badge user">
+                      {AREA_LABELS[usuario.area] || usuario.area}
+                    </span>
+                  )}
+                  {usuario.partTime && (
+                    <span className="badge parttime">Part Time</span>
+                  )}
+                  {!usuario.active && (
+                    <span className="badge inactive-badge">Inactivo</span>
+                  )}
+                </div>
+
+                {usuario.roleType !== 'superadmin' && usuario.roleType !== 'coordinador' && usuario.roleType !== 'directivo' && usuario.secciones && usuario.secciones.length > 0 && (
+                  <div className="usuario-areas" style={{ marginTop: '8px' }}>
+                    <strong>Vistas:</strong>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                      {usuario.secciones.map((s) => (
+                        <span key={s} className="badge user" style={{ fontSize: '11px' }}>
+                          {s.replace('_', ' ')}
                         </span>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ))}
+                )}
+
+                {usuario.diasLaborales && (
+                  <div className="usuario-schedule">
+                    <strong>Horario Semanal:</strong>
+                    <div className="schedule-mini">
+                      {Object.entries(usuario.diasLaborales).map(([dia, tipo]) => {
+                        if (tipo === 'franco') return null;
+                        return (
+                          <span key={dia} className={`schedule-badge ${tipo}`}>
+                            {dia.slice(0, 3).toUpperCase()}: {tipo === 'oficina' ? '🏢' : '🏠'}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       <AnimatePresence>
@@ -193,6 +202,8 @@ const Usuarios = () => {
               setEditingUser(null);
             }}
             usuario={editingUser}
+            isCoordinator={isCoordinator}
+            myArea={myArea}
           />
         )}
       </AnimatePresence>
@@ -200,28 +211,21 @@ const Usuarios = () => {
   );
 };
 
-const SECCIONES_DISPONIBLES = [
-  { key: 'calendario_grupal', label: 'Calendario Grupal' },
-  { key: 'redes', label: 'Calendario Redes' },
-  { key: 'tareas', label: 'Tareas' },
-  { key: 'objetivos', label: 'Objetivos' },
-  { key: 'pauta', label: 'Pauta' },
-  { key: 'metricas', label: 'Métricas' },
-  { key: 'producto', label: 'Producto' },
-  { key: 'visual', label: 'Visual' },
-];
+const UsuarioModal = ({ onClose, usuario, isCoordinator, myArea }) => {
+  const defaultArea = isCoordinator && myArea ? myArea : '';
 
-const UsuarioModal = ({ onClose, usuario }) => {
   const [formData, setFormData] = useState(
     usuario ? {
       ...usuario,
-      secciones: usuario.secciones || []
+      secciones: usuario.secciones || [],
+      roleType: usuario.roleType || 'asistente',
+      area: usuario.area || '',
     } : {
       username: '',
       password: '',
       name: '',
-      role: 'user',
-      areas: [''],
+      roleType: 'asistente',
+      area: defaultArea,
       secciones: [],
       partTime: false,
       active: true,
@@ -238,6 +242,16 @@ const UsuarioModal = ({ onClose, usuario }) => {
   );
   const [loading, setLoading] = useState(false);
 
+  // Secciones disponibles según el área seleccionada
+  const seccionesDisponibles = SECCIONES_POR_AREA[formData.area] || [];
+
+  // Cuando cambia el área, limpiar secciones que ya no están disponibles
+  const handleAreaChange = (newArea) => {
+    const nuevasSecciones = (SECCIONES_POR_AREA[newArea] || []).map(s => s.key)
+      .filter(k => formData.secciones.includes(k));
+    setFormData({ ...formData, area: newArea, secciones: nuevasSecciones });
+  };
+
   const toggleSeccion = (key) => {
     const current = formData.secciones || [];
     const updated = current.includes(key)
@@ -251,20 +265,36 @@ const UsuarioModal = ({ onClose, usuario }) => {
     setLoading(true);
 
     try {
-      const userData = {
-        ...formData,
-        areas: formData.areas.filter(a => a.trim() !== ''),
-        username: formData.username.toLowerCase().trim()
+      const DEFAULT_DIAS = {
+        lunes: 'oficina', martes: 'oficina', miercoles: 'oficina',
+        jueves: 'oficina', viernes: 'oficina', sabado: 'franco', domingo: 'franco',
+      };
+      const saveData = {
+        name: formData.name,
+        username: formData.username.toLowerCase().trim(),
+        roleType: formData.roleType,
+        area: formData.area,
+        secciones: formData.secciones ?? [],
+        partTime: formData.partTime ?? false,
+        active: formData.active ?? true,
+        diasLaborales: formData.diasLaborales ?? DEFAULT_DIAS,
       };
 
+      // Solo actualizar password si se ingresó uno nuevo
+      if (formData.password && formData.password.trim()) {
+        saveData.password = formData.password.trim();
+      }
+
       if (usuario) {
-        // Actualizar
-        const { id, ...updateData } = userData;
-        await updateDoc(doc(db, 'marketingar_users', usuario.id), updateData);
+        await updateDoc(doc(db, 'marketingar_users', usuario.id), saveData);
       } else {
-        // Crear nuevo
+        if (!formData.password) {
+          alert('La contraseña es requerida para nuevos usuarios');
+          setLoading(false);
+          return;
+        }
         await addDoc(collection(db, 'marketingar_users'), {
-          ...userData,
+          ...saveData,
           createdAt: new Date()
         });
       }
@@ -276,20 +306,7 @@ const UsuarioModal = ({ onClose, usuario }) => {
     setLoading(false);
   };
 
-  const addArea = () => {
-    setFormData({ ...formData, areas: [...formData.areas, ''] });
-  };
-
-  const removeArea = (index) => {
-    const newAreas = formData.areas.filter((_, i) => i !== index);
-    setFormData({ ...formData, areas: newAreas });
-  };
-
-  const updateArea = (index, value) => {
-    const newAreas = [...formData.areas];
-    newAreas[index] = value;
-    setFormData({ ...formData, areas: newAreas });
-  };
+  const showSecciones = !MANAGEMENT_ROLES.includes(formData.roleType);
 
   return (
     <motion.div
@@ -316,6 +333,7 @@ const UsuarioModal = ({ onClose, usuario }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
+          {/* ── Identidad ── */}
           <div className="form-row">
             <div className="form-group">
               <label>Nombre completo *</label>
@@ -340,90 +358,81 @@ const UsuarioModal = ({ onClose, usuario }) => {
             </div>
           </div>
 
+          {/* ── Rol y Área (fila clave) ── */}
           <div className="form-row">
-            <div className="form-group">
-              <label>Contraseña {!usuario && '*'}</label>
-              <input
-                type="text"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required={!usuario}
-                placeholder={usuario ? 'Dejar vacío para mantener' : 'Contraseña'}
-              />
-            </div>
-
             <div className="form-group">
               <label>Rol *</label>
               <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                value={formData.roleType}
+                onChange={(e) => setFormData({ ...formData, roleType: e.target.value })}
                 required
               >
-                <option value="user">Usuario</option>
-                <option value="manager">Dirección</option>
-                <option value="producto">Producto</option>
-                <option value="visual">Visual</option>
-                <option value="locales">Locales</option>
-                <option value="admin">Administrador</option>
+                {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Área *</label>
+              <select
+                value={formData.area}
+                onChange={(e) => handleAreaChange(e.target.value)}
+                required
+                disabled={isCoordinator && !!myArea}
+              >
+                <option value="">Seleccionar área...</option>
+                {Object.entries(AREA_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
           </div>
 
+          {/* ── Contraseña ── */}
           <div className="form-group">
-            <label>Áreas de responsabilidad</label>
-            {formData.areas.map((area, index) => (
-              <div key={index} className="area-input-group">
+            <label>Contraseña {!usuario && '*'}</label>
+            <input
+              type="text"
+              value={formData.password || ''}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              required={!usuario}
+              placeholder={usuario ? 'Dejar vacío para mantener' : 'Contraseña'}
+            />
+          </div>
+
+          {/* ── Opciones ── */}
+          <div className="form-row">
+            <div className="form-group">
+              <label className="checkbox-label">
                 <input
-                  type="text"
-                  value={area}
-                  onChange={(e) => updateArea(index, e.target.value)}
-                  placeholder="Ej: Marketing Digital"
+                  type="checkbox"
+                  checked={formData.partTime}
+                  onChange={(e) => setFormData({ ...formData, partTime: e.target.checked })}
                 />
-                {formData.areas.length > 1 && (
-                  <button
-                    type="button"
-                    className="btn-remove-area"
-                    onClick={() => removeArea(index)}
-                  >
-                    <FiX />
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="button" className="btn-add-area" onClick={addArea}>
-              <FiPlus /> Agregar área
-            </button>
+                Part Time
+              </label>
+            </div>
+
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.active}
+                  onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                />
+                Usuario activo
+              </label>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={formData.partTime}
-                onChange={(e) => setFormData({ ...formData, partTime: e.target.checked })}
-              />
-              Part Time
-            </label>
-          </div>
-
-          <div className="form-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={formData.active}
-                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-              />
-              Usuario activo
-            </label>
-          </div>
-
-          {formData.role !== 'admin' && formData.role !== 'manager' && (
+          {showSecciones && formData.area && seccionesDisponibles.length > 0 && (
             <div className="form-group">
               <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600 }}>
-                Vistas habilitadas
+                Vistas habilitadas ({AREA_LABELS[formData.area]})
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {SECCIONES_DISPONIBLES.map(({ key, label }) => (
+                {seccionesDisponibles.map(({ key, label }) => (
                   <label key={key} className="checkbox-label" style={{ cursor: 'pointer' }}>
                     <input
                       type="checkbox"
