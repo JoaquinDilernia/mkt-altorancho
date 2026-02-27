@@ -195,29 +195,25 @@ const Tareas = () => {
             </select>
           )}
 
-          {!canManage && (
-            <>
-              <select 
-                value={filterUrgencia}
-                onChange={(e) => setFilterUrgencia(e.target.value)}
-                className="filtro-select"
-              >
-                <option value="all">Todas las urgencias</option>
-                {urgencias.map(urg => (
-                  <option key={urg.value} value={urg.value}>{urg.label}</option>
-                ))}
-              </select>
+          <select
+            value={filterUrgencia}
+            onChange={(e) => setFilterUrgencia(e.target.value)}
+            className="filtro-select"
+          >
+            <option value="all">Todas las urgencias</option>
+            {urgencias.map(urg => (
+              <option key={urg.value} value={urg.value}>{urg.label}</option>
+            ))}
+          </select>
 
-              <label className="filtro-checkbox">
-                <input
-                  type="checkbox"
-                  checked={filterVencidas}
-                  onChange={(e) => setFilterVencidas(e.target.checked)}
-                />
-                Solo vencidas
-              </label>
-            </>
-          )}
+          <label className="filtro-checkbox">
+            <input
+              type="checkbox"
+              checked={filterVencidas}
+              onChange={(e) => setFilterVencidas(e.target.checked)}
+            />
+            Solo vencidas
+          </label>
         </div>
 
         <div className="filter-buttons">
@@ -317,9 +313,11 @@ const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, canManage, onEdit,
 
   const tieneNotas = tarea.historial?.some(h => h.nota);
 
+  const vencida = isVencida();
+
   return (
     <motion.div
-      className={`tarea-card ${isVencida() ? 'vencida' : ''}`}
+      className={`tarea-card ${vencida ? 'vencida' : ''}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -327,18 +325,23 @@ const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, canManage, onEdit,
     >
       <div className="tarea-header">
         <div className="tarea-badges">
-          <span 
+          <span
             className="badge estado"
             style={{ background: getEstadoColor(tarea.estado) }}
           >
             {tarea.estado?.replace('_', ' ')}
           </span>
-          <span 
+          <span
             className="badge urgencia"
             style={{ background: getUrgenciaColor(tarea.urgencia) }}
           >
             {tarea.urgencia}
           </span>
+          {vencida && (
+            <span className="badge badge-vencida">
+              Vencida
+            </span>
+          )}
         </div>
         <div className="tarea-actions">
           <button className="btn-icon" onClick={() => onEdit(tarea)}>
@@ -370,7 +373,7 @@ const TareaCard = ({ tarea, getEstadoColor, getUrgenciaColor, canManage, onEdit,
           <span>Creada: {formatDate(tarea.fechaCarga)}</span>
         </div>
         {tarea.fechaEntrega && (
-          <div className="date-item">
+          <div className={`date-item ${vencida ? 'date-item--vencida' : ''}`}>
             <FiAlertCircle />
             <span>Entrega: {formatDate(tarea.fechaEntrega)}</span>
           </div>

@@ -432,10 +432,125 @@
   margin-top: 6px;
 }
 
+/* Tareas vencidas alert */
+.vencidas-alert {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.25);
+}
+
+.vencidas-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.vencidas-header svg {
+  font-size: 24px;
+}
+
+.vencidas-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.vencidas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vencida-item {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.vencida-titulo {
+  font-weight: 600;
+  color: white;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.vencida-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vencida-asignado {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.vencida-dias {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fecaca;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.vencidas-more {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 4px;
+}
+
+/* Vencida dentro de lista de tareas */
+.tarea-item.vencida {
+  border-left-color: #dc2626;
+  background: #fff8f8;
+}
+
+.tarea-badge-vencida {
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #dc2626;
+  color: white;
+}
+
+.tarea-item-fecha.vencida {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Reuniones link */
+.reunion-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #462829;
+  background: #e6d7b3;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.reunion-link:hover {
+  background: #d4c19f;
+}
+
 @media (max-width: 768px) {
-  .welcome-section h1 {
-    font-size: 26px;
+  .vencidas-alert {
+    padding: 18px;
+    margin-bottom: 20px;
   }
+}
 
   .welcome-section {
     margin-bottom: 24px;

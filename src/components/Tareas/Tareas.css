@@ -179,8 +179,33 @@
 }
 
 .tarea-card.vencida {
-  border-color: #fee;
-  background: #fffafa;
+  border-color: #fca5a5;
+  background: #fff8f8;
+  box-shadow: 0 2px 12px rgba(220, 38, 38, 0.08);
+}
+
+.tarea-card.vencida:hover {
+  border-color: #ef4444;
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.14);
+}
+
+.badge-vencida {
+  background: #dc2626;
+  animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+.date-item--vencida {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.date-item--vencida svg {
+  color: #dc2626;
 }
 
 .tarea-header {

@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
   FiUser, FiLock, FiCamera, FiSave,
-  FiPlus, FiX, FiCalendar
+  FiPlus, FiX, FiCalendar, FiMail
 } from 'react-icons/fi';
 import { ROLE_LABELS, AREA_LABELS } from '../../utils/roles';
 import './Perfil.css';
@@ -32,6 +32,7 @@ const Perfil = () => {
 
   // ── Datos personales ──────────────────────────────────────────────────────
   const [nombre, setNombre] = useState(userData.name || '');
+  const [email, setEmail] = useState(userData.email || '');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
@@ -70,7 +71,7 @@ const Perfil = () => {
     }
     setSavingDatos(true);
     try {
-      const updates = { name: nombre.trim() };
+      const updates = { name: nombre.trim(), email: email.trim() };
       if (photoFile) {
         const storageRef = ref(storage, `profile-photos/${userData.id}`);
         await uploadBytes(storageRef, photoFile);
@@ -209,6 +210,16 @@ const Perfil = () => {
                 onChange={(e) => setNombre(e.target.value)}
                 required
                 placeholder="Tu nombre completo"
+              />
+            </div>
+
+            <div className="form-group">
+              <label><FiMail style={{ verticalAlign: 'middle', marginRight: 4 }} />Email para notificaciones</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com (opcional)"
               />
             </div>
 

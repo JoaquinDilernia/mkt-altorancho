@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
+import { notificarParticipantes } from '../../utils/notificaciones';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPlus, FiChevronLeft, FiChevronRight, FiX, FiVideo,
@@ -485,6 +486,18 @@ const ReunionModal = ({ reunion, prefill, salas, usuarios, currentUser, onClose,
         await updateDoc(doc(db, 'marketingar_reuniones', reunion.id), saveData);
       } else {
         await addDoc(collection(db, 'marketingar_reuniones'), { ...saveData, createdAt: new Date() });
+        // Notificar participantes (excluir organizador)
+        if (saveData.participantes?.length) {
+          notificarParticipantes(
+            saveData.participantes.map(p => p.nombre),
+            {
+              tipo: 'reunion',
+              titulo: saveData.titulo,
+              mensaje: `${currentUser.name} te convocó a una reunión`,
+              creadoPor: currentUser.name,
+            }
+          ).catch(() => {});
+        }
       }
       onClose();
     } catch (err) {

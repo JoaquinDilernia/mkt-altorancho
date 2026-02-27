@@ -3,10 +3,17 @@ import { useAuth } from '../../context/AuthContext';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { motion } from 'framer-motion';
-import { FiCalendar, FiCheckSquare, FiInstagram, FiTrendingUp, FiClock } from 'react-icons/fi';
+import { FiCalendar, FiCheckSquare, FiInstagram, FiTrendingUp, FiClock, FiAlertTriangle, FiVideo } from 'react-icons/fi';
 import { format, isSameDay, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import './Home.css';
+
+const toDateStr = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 const Home = () => {
   const { userData, isAdmin, isCoordinator, isManager } = useAuth();
@@ -14,6 +21,7 @@ const Home = () => {
   const [tareas, setTareas] = useState([]);
   const [eventos, setEventos] = useState([]);
   const [eventosMencionado, setEventosMencionado] = useState([]);
+  const [misReuniones, setMisReuniones] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,17 +76,36 @@ const Home = () => {
     const unsubEventosMencion = onSnapshot(eventosMencionQuery, (snapshot) => {
       const todosEventos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       // Filtrar solo eventos donde estoy mencionado
-      const mencionado = todosEventos.filter(evento => 
+      const mencionado = todosEventos.filter(evento =>
         evento.participantes && evento.participantes.includes(userData.name)
       );
       setEventosMencionado(mencionado);
       setLoading(false);
     });
 
+    // Reuniones de esta semana donde soy participante
+    const hoyStr = toDateStr(hoy);
+    const en7Dias = toDateStr(addDays(hoy, 7));
+    const reunionesQuery = query(
+      collection(db, 'marketingar_reuniones'),
+      where('dateStr', '>=', hoyStr),
+      where('dateStr', '<=', en7Dias),
+      orderBy('dateStr', 'asc')
+    );
+    const unsubReuniones = onSnapshot(reunionesQuery, (snapshot) => {
+      const todas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      // solo las donde soy participante
+      const mias = todas.filter(r =>
+        Array.isArray(r.participantes) && r.participantes.some(p => p.id === userData.id)
+      );
+      setMisReuniones(mias);
+    });
+
     return () => {
       unsubTareas();
       unsubEventos();
       unsubEventosMencion();
+      unsubReuniones();
     };
   }, [userData, canManage, isManager]);
 
@@ -110,22 +137,34 @@ const Home = () => {
     ? allTareas.filter(t => t.estado === 'finalizado').length
     : misTareas.filter(t => t.estado === 'finalizado').length;
 
+  const isVencida = (t) => {
+    if (!t.fechaEntrega || t.estado === 'finalizado') return false;
+    const fecha = t.fechaEntrega.toDate ? t.fechaEntrega.toDate() : new Date(t.fechaEntrega);
+    return fecha < new Date();
+  };
+
+  const tareasVencidasLista = canManage
+    ? allTareas.filter(isVencida)
+    : misTareas.filter(isVencida);
+
+  const tareasVencidas = tareasVencidasLista.length;
+
   const contenidosPublicados = allContenidos.filter(c =>
     c.publicado || (c.publicaciones && Object.values(c.publicaciones).some(p => p?.publicado))
   ).length;
   const contenidosProgramados = allContenidos.length;
 
-  const quickStats = isManager 
+  const quickStats = isManager
     ? [
         { icon: FiCalendar, label: 'Eventos Esta Semana', value: eventos.length, color: '#353434' },
-        { icon: FiInstagram, label: 'Posts Programados', value: contenidosProgramados, color: '#e6d7b3' },
+        { icon: FiInstagram, label: 'Posts Programados', value: contenidosProgramados, color: '#e6d7b3', textColor: '#462829' },
         { icon: FiInstagram, label: 'Posts Publicados', value: contenidosPublicados, color: '#462829' },
       ]
     : [
         { icon: FiCheckSquare, label: 'Tareas Activas', value: tareasActivas, color: '#462829' },
+        ...(tareasVencidas > 0 ? [{ icon: FiAlertTriangle, label: 'Tareas Vencidas', value: tareasVencidas, color: '#dc2626' }] : []),
         { icon: FiCalendar, label: 'Eventos Esta Semana', value: eventos.length, color: '#353434' },
-        { icon: FiInstagram, label: 'Posts Programados', value: contenidosProgramados, color: '#e6d7b3' },
-        { icon: FiTrendingUp, label: 'Completadas Este Mes', value: tareasCompletadasMes, color: '#462829' },
+        { icon: FiTrendingUp, label: 'Completadas', value: tareasCompletadasMes, color: '#10b981' },
       ];
 
   if (loading) {
@@ -190,7 +229,7 @@ const Home = () => {
             {eventosMencionado.map(evento => {
               const fecha = evento.fecha.toDate ? evento.fecha.toDate() : new Date(evento.fecha);
               const diasRestantes = Math.ceil((fecha - new Date()) / (1000 * 60 * 60 * 24));
-              
+
               return (
                 <div key={evento.id} className="mencion-item">
                   <div className="mencion-fecha">
@@ -221,6 +260,44 @@ const Home = () => {
         </motion.div>
       )}
 
+      {!isManager && tareasVencidas > 0 && (
+        <motion.div
+          className="vencidas-alert"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.35 }}
+        >
+          <div className="vencidas-header">
+            <FiAlertTriangle />
+            <h3>
+              {tareasVencidas === 1
+                ? `Tenés 1 tarea vencida`
+                : `Tenés ${tareasVencidas} tareas vencidas`}
+            </h3>
+          </div>
+          <div className="vencidas-list">
+            {tareasVencidasLista.slice(0, 4).map(t => {
+              const fecha = t.fechaEntrega.toDate ? t.fechaEntrega.toDate() : new Date(t.fechaEntrega);
+              const diasAtras = Math.floor((new Date() - fecha) / (1000 * 60 * 60 * 24));
+              return (
+                <div key={t.id} className="vencida-item">
+                  <div className="vencida-titulo">{t.titulo}</div>
+                  <div className="vencida-meta">
+                    {canManage && <span className="vencida-asignado">{t.asignadoNombre}</span>}
+                    <span className="vencida-dias">
+                      {diasAtras === 0 ? 'Venció hoy' : `Hace ${diasAtras} día${diasAtras !== 1 ? 's' : ''}`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {tareasVencidasLista.length > 4 && (
+              <div className="vencidas-more">+{tareasVencidasLista.length - 4} más en Tareas</div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
       <div className="dashboard-sections">
         {!isManager && (
           <motion.section 
@@ -240,7 +317,7 @@ const Home = () => {
                 </div>
               ) : (
                 tareas.map(tarea => (
-                  <div key={tarea.id} className="tarea-item">
+                  <div key={tarea.id} className={`tarea-item${isVencida(tarea) ? ' vencida' : ''}`}>
                     <div className="tarea-item-header">
                       <span className={`tarea-badge ${tarea.urgencia}`}>
                         {tarea.urgencia}
@@ -248,6 +325,9 @@ const Home = () => {
                       <span className={`tarea-estado ${tarea.estado}`}>
                         {tarea.estado?.replace('_', ' ')}
                       </span>
+                      {isVencida(tarea) && (
+                        <span className="tarea-badge-vencida">Vencida</span>
+                      )}
                     </div>
                     <div className="tarea-item-title">{tarea.titulo}</div>
                     {canManage && (
@@ -256,17 +336,17 @@ const Home = () => {
                       </div>
                     )}
                     {tarea.fechaEntrega && (
-                      <div className="tarea-item-fecha">
+                      <div className={`tarea-item-fecha${isVencida(tarea) ? ' vencida' : ''}`}>
                         <FiClock />
-                      Entrega: {format(tarea.fechaEntrega.toDate(), 'dd/MM/yyyy')}
-                    </div>
-                  )}
-                </div>
-              ))
+                        Entrega: {format(tarea.fechaEntrega.toDate ? tarea.fechaEntrega.toDate() : new Date(tarea.fechaEntrega), 'dd/MM/yyyy')}
+                      </div>
+                    )}
+                  </div>
+                ))
             )}
           </div>
         </motion.section>        )}
-        <motion.section 
+        <motion.section
           className="dashboard-card"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -285,7 +365,7 @@ const Home = () => {
               eventos.map(evento => {
                 const fecha = evento.fecha.toDate ? evento.fecha.toDate() : new Date(evento.fecha);
                 const esHoy = isSameDay(fecha, new Date());
-                
+
                 return (
                   <div key={evento.id} className={`evento-item ${esHoy ? 'hoy' : ''}`}>
                     <div className="evento-fecha">
@@ -307,6 +387,48 @@ const Home = () => {
             )}
           </div>
         </motion.section>
+
+        {misReuniones.length > 0 && (
+          <motion.section
+            className="dashboard-card"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <h2>
+              <FiVideo /> Mis Reuniones (próximos 7 días)
+            </h2>
+            <div className="eventos-list">
+              {misReuniones.map(r => {
+                const esCadena = typeof r.dateStr === 'string' && r.dateStr.length === 10;
+                const [yy, mm, dd] = esCadena ? r.dateStr.split('-').map(Number) : [null, null, null];
+                const fecha = esCadena ? new Date(yy, mm - 1, dd) : null;
+                const esHoy = fecha ? isSameDay(fecha, new Date()) : false;
+                return (
+                  <div key={r.id} className={`evento-item${esHoy ? ' hoy' : ''}`}>
+                    {fecha && (
+                      <div className="evento-fecha">
+                        <div className="evento-dia">{format(fecha, 'd')}</div>
+                        <div className="evento-mes">{format(fecha, 'MMM', { locale: es })}</div>
+                      </div>
+                    )}
+                    <div className="evento-info">
+                      <div className="evento-titulo">{r.titulo}</div>
+                      <div className="evento-hora">
+                        <FiClock /> {r.horaInicio} – {r.horaFin}
+                      </div>
+                      {r.linkMeet && (
+                        <a href={r.linkMeet} target="_blank" rel="noreferrer" className="reunion-link">
+                          Unirse a la reunión
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
       </div>
     </div>
   );

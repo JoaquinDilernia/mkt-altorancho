@@ -12,7 +12,8 @@ import { es } from 'date-fns/locale';
 import {
   FiPlus, FiX, FiEdit2, FiTrash2, FiMapPin, FiCamera,
   FiMessageSquare, FiSend, FiCheck, FiChevronDown,
-  FiChevronUp, FiImage, FiLayout, FiCalendar
+  FiChevronUp, FiImage, FiLayout, FiCalendar,
+  FiChevronLeft, FiChevronRight, FiExternalLink
 } from 'react-icons/fi';
 import './Visual.css';
 
@@ -313,28 +314,7 @@ const VisitaCard = ({ item, canEdit, userData, onEdit, onDelete, onConfirmar, on
         </div>
       )}
 
-      {(() => {
-        const fotos = normalizeFotos(item.fotos);
-        if (!fotos.length) return null;
-        return (
-          <div className="visita-fotos-grid">
-            {fotos.slice(0, 4).map((url, i) => {
-              if (i === 3 && fotos.length > 4) return (
-                <a key={i} href={fotos[i]} target="_blank" rel="noreferrer" className="foto-card-more">
-                  +{fotos.length - 3}
-                </a>
-              );
-              return (
-                <a key={i} href={url} target="_blank" rel="noreferrer" className="foto-card-thumb">
-                  <img src={url} alt={`Foto ${i + 1}`}
-                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-                  <span className="foto-card-fallback"><FiImage size={14} /></span>
-                </a>
-              );
-            })}
-          </div>
-        );
-      })()}
+      <FotosGrid fotos={item.fotos} />
 
       {/* Confirmaciones */}
       <div className="confirmaciones-row">
@@ -426,28 +406,7 @@ const ArmadoCard = ({ item, canEdit, userData, onEdit, onDelete, onConfirmar, on
         </div>
       )}
 
-      {(() => {
-        const fotos = normalizeFotos(item.fotos);
-        if (!fotos.length) return null;
-        return (
-          <div className="visita-fotos-grid">
-            {fotos.slice(0, 4).map((url, i) => {
-              if (i === 3 && fotos.length > 4) return (
-                <a key={i} href={fotos[i]} target="_blank" rel="noreferrer" className="foto-card-more">
-                  +{fotos.length - 3}
-                </a>
-              );
-              return (
-                <a key={i} href={url} target="_blank" rel="noreferrer" className="foto-card-thumb">
-                  <img src={url} alt={`Foto ${i + 1}`}
-                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-                  <span className="foto-card-fallback"><FiImage size={14} /></span>
-                </a>
-              );
-            })}
-          </div>
-        );
-      })()}
+      <FotosGrid fotos={item.fotos} />
 
       <div className="confirmaciones-row">
         <button
@@ -498,6 +457,89 @@ const ArmadoCard = ({ item, canEdit, userData, onEdit, onDelete, onConfirmar, on
 // ── Helper ────────────────────────────────────────────────────────────────────
 const normalizeFotos = (fotos) =>
   Array.isArray(fotos) ? fotos : (fotos ? [fotos] : []);
+
+// ── FotosGrid ─────────────────────────────────────────────────────────────────
+const FotosGrid = ({ fotos }) => {
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+  const all = normalizeFotos(fotos);
+  if (!all.length) return null;
+
+  return (
+    <>
+      <div className="visita-fotos-grid">
+        {all.slice(0, 4).map((url, i) => {
+          if (i === 3 && all.length > 4) return (
+            <button key={i} type="button" className="foto-card-more" onClick={() => setLightboxIdx(3)}>
+              +{all.length - 3}
+            </button>
+          );
+          return (
+            <button key={i} type="button" className="foto-card-thumb" onClick={() => setLightboxIdx(i)}>
+              <img src={url} alt={`Foto ${i + 1}`}
+                onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+              <span className="foto-card-fallback"><FiImage size={14} /></span>
+            </button>
+          );
+        })}
+      </div>
+      <AnimatePresence>
+        {lightboxIdx !== null && (
+          <Lightbox fotos={all} initialIndex={lightboxIdx} onClose={() => setLightboxIdx(null)} />
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+const Lightbox = ({ fotos, initialIndex, onClose }) => {
+  const [idx, setIdx] = useState(initialIndex);
+  const canPrev = idx > 0;
+  const canNext = idx < fotos.length - 1;
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft' && idx > 0) setIdx(i => i - 1);
+      if (e.key === 'ArrowRight' && idx < fotos.length - 1) setIdx(i => i + 1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [idx, fotos.length, onClose]);
+
+  return (
+    <motion.div
+      className="lightbox-overlay"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <div className="lightbox-topbar" onClick={e => e.stopPropagation()}>
+        <span className="lightbox-counter">{idx + 1} / {fotos.length}</span>
+        <div className="lightbox-actions">
+          <a href={fotos[idx]} target="_blank" rel="noreferrer" className="lightbox-btn" title="Abrir original">
+            <FiExternalLink size={16} />
+          </a>
+          <button className="lightbox-btn" onClick={onClose} title="Cerrar">
+            <FiX size={18} />
+          </button>
+        </div>
+      </div>
+      <div className="lightbox-stage" onClick={e => e.stopPropagation()}>
+        {canPrev && (
+          <button className="lightbox-nav prev" onClick={() => setIdx(i => i - 1)}>
+            <FiChevronLeft size={22} />
+          </button>
+        )}
+        <img src={fotos[idx]} alt={`Foto ${idx + 1}`} className="lightbox-img" />
+        {canNext && (
+          <button className="lightbox-nav next" onClick={() => setIdx(i => i + 1)}>
+            <FiChevronRight size={22} />
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 // ── VisualModal ───────────────────────────────────────────────────────────────
 const VisualModal = ({ type, editingItem, onClose, onSave }) => {

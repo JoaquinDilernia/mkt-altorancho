@@ -3,6 +3,7 @@ import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, where
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import { parseLocalDateTime, formatDateForInput, formatTimeForInput } from '../../utils/dateUtils';
+import { notificarParticipantes } from '../../utils/notificaciones';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiPlus, 
@@ -535,6 +536,15 @@ const NuevoEventoModal = ({ onClose, tiposEvento, selectedDate, evento, puedeEdi
             })
           );
           await Promise.all(promises);
+          // Notificar participantes (solo al crear, no editar)
+          if (formData.participantes?.length) {
+            notificarParticipantes(formData.participantes, {
+              tipo: 'calendario',
+              titulo: formData.titulo,
+              mensaje: `${userData.name} te agregó a un evento`,
+              creadoPor: userData.name,
+            }).catch(() => {});
+          }
         } else {
           // Evento de un solo día
           await addDoc(collection(db, 'marketingar_calendario'), {
@@ -546,6 +556,15 @@ const NuevoEventoModal = ({ onClose, tiposEvento, selectedDate, evento, puedeEdi
             creadoId: userData.id,
             createdAt: new Date()
           });
+          // Notificar participantes
+          if (formData.participantes?.length) {
+            notificarParticipantes(formData.participantes, {
+              tipo: 'calendario',
+              titulo: formData.titulo,
+              mensaje: `${userData.name} te agregó a un evento`,
+              creadoPor: userData.name,
+            }).catch(() => {});
+          }
         }
       }
       onClose();

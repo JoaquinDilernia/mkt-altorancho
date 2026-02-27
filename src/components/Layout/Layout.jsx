@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { collection, query, where, onSnapshot, writeBatch, doc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import {
   FiHome,
@@ -17,6 +19,7 @@ import {
   FiCamera,
   FiMapPin,
   FiVideo,
+  FiBell,
 } from 'react-icons/fi';
 import { ROLE_LABELS, AREA_LABELS } from '../../utils/roles';
 import './Layout.css';
@@ -28,6 +31,48 @@ const Layout = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  // ── Notificaciones ──────────────────────────────────────────────────────────
+  const [notifs, setNotifs] = useState([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const notifsRef = useRef(null);
+
+  useEffect(() => {
+    if (!userData?.name) return;
+    const q = query(
+      collection(db, 'marketingar_notificaciones'),
+      where('userName', '==', userData.name),
+      where('leido', '==', false)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      setNotifs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return unsub;
+  }, [userData?.name]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showNotifs) return;
+    const handler = (e) => {
+      if (notifsRef.current && !notifsRef.current.contains(e.target)) {
+        setShowNotifs(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showNotifs]);
+
+  const handleOpenNotifs = async () => {
+    setShowNotifs(prev => !prev);
+    // Mark all as read
+    if (notifs.length > 0) {
+      try {
+        const batch = writeBatch(db);
+        notifs.forEach(n => batch.update(doc(db, 'marketingar_notificaciones', n.id), { leido: true }));
+        await batch.commit();
+      } catch { /* silent */ }
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -145,7 +190,41 @@ const Layout = () => {
             {sidebarOpen ? <FiX /> : <FiMenu />}
           </button>
 
-          <div className="user-info">
+          <div className="topbar-right">
+            {/* Campanita de notificaciones */}
+            <div className="notif-wrapper" ref={notifsRef}>
+              <button
+                className={`notif-bell ${notifs.length > 0 ? 'has-notifs' : ''}`}
+                onClick={handleOpenNotifs}
+                title="Notificaciones"
+              >
+                <FiBell />
+                {notifs.length > 0 && (
+                  <span className="notif-badge">{notifs.length > 9 ? '9+' : notifs.length}</span>
+                )}
+              </button>
+
+              {showNotifs && (
+                <div className="notif-dropdown">
+                  <div className="notif-dropdown-header">
+                    <span>Notificaciones</span>
+                  </div>
+                  {notifs.length === 0 ? (
+                    <div className="notif-empty">Nada nuevo por ahora</div>
+                  ) : (
+                    <div className="notif-list">
+                      {notifs.map(n => (
+                        <div key={n.id} className={`notif-item notif-${n.tipo}`}>
+                          <div className="notif-titulo">{n.titulo}</div>
+                          <div className="notif-mensaje">{n.mensaje}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <Link to="/perfil" className="user-info-link" title="Mi perfil">
               <div className="user-avatar">
                 {userData?.photoURL
