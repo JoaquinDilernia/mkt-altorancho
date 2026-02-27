@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { 
   FiTrendingUp, 
@@ -17,6 +18,7 @@ import { es } from 'date-fns/locale';
 import './Metricas.css';
 
 const Metricas = () => {
+  const { roleType, area } = useAuth();
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [contenidosRedes, setContenidosRedes] = useState([]);
@@ -53,11 +55,19 @@ const Metricas = () => {
     };
   }, []);
 
-  // Métricas generales
-  const tareasFinalizadas = tareas.filter(t => t.estado === 'finalizado').length;
-  const tareasEnProceso = tareas.filter(t => t.estado === 'proceso').length;
-  const tareasTrabadas = tareas.filter(t => t.estado === 'trabada').length;
-  const tareasVencidas = tareas.filter(t => {
+  // Filtra usuarios al área del usuario actual (superadmin ve todos)
+  const usuariosDeArea = roleType === 'superadmin'
+    ? usuarios
+    : usuarios.filter(u => u.area === area);
+
+  // Métricas generales — solo tareas asignadas a usuarios del área
+  const idsDeArea = new Set(usuariosDeArea.map(u => u.id));
+  const tareasDeArea = tareas.filter(t => !t.asignadoId || idsDeArea.has(t.asignadoId));
+
+  const tareasFinalizadas = tareasDeArea.filter(t => t.estado === 'finalizado').length;
+  const tareasEnProceso = tareasDeArea.filter(t => t.estado === 'proceso').length;
+  const tareasTrabadas = tareasDeArea.filter(t => t.estado === 'trabada').length;
+  const tareasVencidas = tareasDeArea.filter(t => {
     if (!t.fechaEntrega || t.estado === 'finalizado') return false;
     const entrega = t.fechaEntrega.toDate ? t.fechaEntrega.toDate() : new Date(t.fechaEntrega);
     return entrega < new Date();
@@ -70,9 +80,9 @@ const Metricas = () => {
     !c.publicado && (!c.publicaciones || !Object.values(c.publicaciones).some(p => p?.publicado))
   ).length;
 
-  // Métricas por usuario
-  const metricasPorUsuario = usuarios.filter(u => u.role !== 'admin').map(usuario => {
-    const tareasUsuario = tareas.filter(t => t.asignadoId === usuario.id);
+  // Métricas por usuario (solo del área)
+  const metricasPorUsuario = usuariosDeArea.filter(u => u.role !== 'admin').map(usuario => {
+    const tareasUsuario = tareasDeArea.filter(t => t.asignadoId === usuario.id);
     const finalizadas = tareasUsuario.filter(t => t.estado === 'finalizado').length;
     const pendientes = tareasUsuario.filter(t => t.estado !== 'finalizado').length;
     const vencidas = tareasUsuario.filter(t => {
@@ -94,7 +104,7 @@ const Metricas = () => {
   const statsCards = [
     {
       title: 'Total Tareas',
-      value: tareas.length,
+      value: tareasDeArea.length,
       icon: FiCheckCircle,
       color: '#3b82f6',
       subtitle: `${tareasFinalizadas} finalizadas`
