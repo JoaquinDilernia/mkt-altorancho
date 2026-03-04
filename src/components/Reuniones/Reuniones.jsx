@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPlus, FiChevronLeft, FiChevronRight, FiX, FiVideo,
   FiMapPin, FiSave, FiTrash2, FiAlertCircle, FiAlertTriangle,
-  FiLink, FiClock, FiInfo
+  FiLink, FiClock, FiInfo, FiRepeat
 } from 'react-icons/fi';
 import './Reuniones.css';
 
@@ -322,7 +322,10 @@ const Reuniones = () => {
                         }}
                         title={reunion.titulo}
                       >
-                        <div className="mc-title">{reunion.titulo}</div>
+                        <div className="mc-title">
+                          {reunion.recurrente && <FiRepeat size={9} style={{ marginRight: 3, opacity: 0.7 }} />}
+                          {reunion.titulo}
+                        </div>
                         <div className="mc-meta">
                           <FiClock size={9} />
                           {reunion.horaInicio}–{reunion.horaFin}
@@ -366,6 +369,30 @@ const Reuniones = () => {
   );
 };
 
+// ── Recurring date generator ──────────────────────────────────────────────────
+const generateRecurringDates = (startStr, endStr, frecuencia, diasRec) => {
+  const dayNameToIndex = {
+    'lunes': 1, 'martes': 2, 'miercoles': 3, 'jueves': 4,
+    'viernes': 5, 'sabado': 6, 'domingo': 0
+  };
+  const allowedIndexes = frecuencia === 'diaria'
+    ? [0,1,2,3,4,5,6]
+    : diasRec.map(d => dayNameToIndex[d]);
+
+  const dates = [];
+  const start = new Date(startStr + 'T12:00:00');
+  const end   = new Date(endStr   + 'T12:00:00');
+  const cur   = new Date(start);
+
+  while (cur <= end) {
+    if (allowedIndexes.includes(cur.getDay())) {
+      dates.push(toDateStr(cur));
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+};
+
 // ── ReunionModal ──────────────────────────────────────────────────────────────
 const ReunionModal = ({ reunion, prefill, salas, usuarios, currentUser, onClose, onDelete }) => {
   const isEditing = !!reunion;
@@ -394,6 +421,10 @@ const ReunionModal = ({ reunion, prefill, salas, usuarios, currentUser, onClose,
         photoURL: currentUser.photoURL || null
       }],
       linkMeet: '', notas: '',
+      recurrente: false,
+      frecuenciaRec: 'semanal',
+      diasRec: [],
+      fechaFinRec: '',
     };
   });
 
@@ -424,6 +455,20 @@ const ReunionModal = ({ reunion, prefill, salas, usuarios, currentUser, onClose,
     if (formData.tipo === 'presencial' && !formData.salaId) {
       alert('Seleccioná una sala para la reunión presencial');
       return;
+    }
+    if (!isEditing && formData.recurrente) {
+      if (!formData.fechaFinRec) {
+        alert('Ingresá una fecha de fin para la reunión recurrente');
+        return;
+      }
+      if (formData.fechaFinRec <= formData.fecha) {
+        alert('La fecha de fin debe ser posterior a la fecha de inicio');
+        return;
+      }
+      if (formData.frecuenciaRec === 'semanal' && formData.diasRec.length === 0) {
+        alert('Seleccioná al menos un día de la semana');
+        return;
+      }
     }
     setLoading(true);
     setHardConflicts([]);
@@ -484,6 +529,39 @@ const ReunionModal = ({ reunion, prefill, salas, usuarios, currentUser, onClose,
 
       if (isEditing) {
         await updateDoc(doc(db, 'marketingar_reuniones', reunion.id), saveData);
+      } else if (formData.recurrente) {
+        // Crear múltiples documentos para reunión recurrente
+        const recurrenteId = `rec_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+        const dates = generateRecurringDates(
+          formData.fecha, formData.fechaFinRec, formData.frecuenciaRec, formData.diasRec
+        );
+        if (dates.length === 0) {
+          alert('No se encontraron fechas con los parámetros seleccionados');
+          setLoading(false);
+          return;
+        }
+        await Promise.all(
+          dates.map(dateStr =>
+            addDoc(collection(db, 'marketingar_reuniones'), {
+              ...saveData,
+              fecha: dateStr,
+              recurrenteId,
+              recurrente: true,
+              createdAt: new Date()
+            })
+          )
+        );
+        if (saveData.participantes?.length) {
+          notificarParticipantes(
+            saveData.participantes.map(p => p.nombre),
+            {
+              tipo: 'reunion',
+              titulo: saveData.titulo,
+              mensaje: `${currentUser.name} te convocó a una reunión recurrente (${dates.length} sesiones)`,
+              creadoPor: currentUser.name,
+            }
+          ).catch(() => {});
+        }
       } else {
         await addDoc(collection(db, 'marketingar_reuniones'), { ...saveData, createdAt: new Date() });
         // Notificar participantes (excluir organizador)
@@ -677,6 +755,95 @@ const ReunionModal = ({ reunion, prefill, salas, usuarios, currentUser, onClose,
                   placeholder="Temas a tratar..."
                 />
               </div>
+
+              {!isEditing && (
+                <div className="form-group recurrencia-group">
+                  <label className="recurrencia-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.recurrente}
+                      onChange={e => setFormData({ ...formData, recurrente: e.target.checked })}
+                    />
+                    <span>Reunión recurrente</span>
+                  </label>
+
+                  {formData.recurrente && (
+                    <div className="recurrencia-opciones">
+                      <div className="form-group">
+                        <label>Frecuencia</label>
+                        <div className="tipo-toggle">
+                          <button
+                            type="button"
+                            className={formData.frecuenciaRec === 'diaria' ? 'active' : ''}
+                            onClick={() => setFormData({ ...formData, frecuenciaRec: 'diaria', diasRec: [] })}
+                          >
+                            Diaria
+                          </button>
+                          <button
+                            type="button"
+                            className={formData.frecuenciaRec === 'semanal' ? 'active' : ''}
+                            onClick={() => setFormData({ ...formData, frecuenciaRec: 'semanal' })}
+                          >
+                            Semanal
+                          </button>
+                        </div>
+                      </div>
+
+                      {formData.frecuenciaRec === 'semanal' && (
+                        <div className="form-group">
+                          <label>Días de la semana</label>
+                          <div className="dias-recurrencia">
+                            {[
+                              { k: 'lunes',     l: 'Lun' },
+                              { k: 'martes',    l: 'Mar' },
+                              { k: 'miercoles', l: 'Mié' },
+                              { k: 'jueves',    l: 'Jue' },
+                              { k: 'viernes',   l: 'Vie' },
+                              { k: 'sabado',    l: 'Sáb' },
+                              { k: 'domingo',   l: 'Dom' },
+                            ].map(({ k, l }) => (
+                              <button
+                                key={k}
+                                type="button"
+                                className={`dia-btn ${formData.diasRec.includes(k) ? 'active' : ''}`}
+                                onClick={() => setFormData(prev => ({
+                                  ...prev,
+                                  diasRec: prev.diasRec.includes(k)
+                                    ? prev.diasRec.filter(d => d !== k)
+                                    : [...prev.diasRec, k]
+                                }))}
+                              >
+                                {l}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="form-group">
+                        <label>Repetir hasta *</label>
+                        <input
+                          type="date"
+                          value={formData.fechaFinRec}
+                          onChange={e => setFormData({ ...formData, fechaFinRec: e.target.value })}
+                          min={formData.fecha}
+                        />
+                        <small>
+                          {formData.fechaFinRec && formData.fecha && (
+                            (() => {
+                              const n = generateRecurringDates(
+                                formData.fecha, formData.fechaFinRec,
+                                formData.frecuenciaRec, formData.diasRec
+                              ).length;
+                              return n > 0 ? `Se crearán ${n} reuniones` : '';
+                            })()
+                          )}
+                        </small>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 

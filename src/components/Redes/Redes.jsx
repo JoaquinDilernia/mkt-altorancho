@@ -4,23 +4,23 @@ import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import { parseLocalDate, formatDateForInput } from '../../utils/dateUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiPlus, 
-  FiChevronLeft, 
+import {
+  FiPlus,
+  FiChevronLeft,
   FiChevronRight,
   FiInstagram,
   FiMail,
   FiImage,
   FiCheck,
   FiX,
-  FiTrash2
+  FiTrash2,
+  FiAlertTriangle
 } from 'react-icons/fi';
-import { 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  format, 
-  isSameMonth,
+import {
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  format,
   addMonths,
   subMonths
 } from 'date-fns';
@@ -28,7 +28,7 @@ import { es } from 'date-fns/locale';
 import './Redes.css';
 
 const Redes = () => {
-  const { userData, isAdmin, isCoordinator, roleType } = useAuth();
+  const { userData, isAdmin, isManager, isCoordinator } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [contenidos, setContenidos] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -36,7 +36,7 @@ const Redes = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const canEdit = isAdmin || isCoordinator;
+  const canEdit = (isAdmin || isCoordinator) && !isManager;
 
   const focos = [
     'producto', 'comercial', 'info', 'campaña',
@@ -53,8 +53,23 @@ const Redes = () => {
     { value: 'tiktok', label: 'TikTok', icon: FiImage, requiresLink: true }
   ];
 
-  const esDiseño    = roleType === 'diseno';
-  const esCommunity = roleType === 'community';
+  // Determinar rol del usuario
+  const esDiseño = userData?.areas?.some(area =>
+    area.toLowerCase().includes('diseño') ||
+    area.toLowerCase().includes('video') ||
+    area.toLowerCase().includes('juli')
+  );
+
+  const esCommunity = userData?.areas?.some(area =>
+    area.toLowerCase().includes('social') ||
+    area.toLowerCase().includes('contenido') ||
+    area.toLowerCase().includes('community') ||
+    area.toLowerCase().includes('vicky') ||
+    area.toLowerCase().includes('trini') ||
+    area.toLowerCase().includes('email marketing') ||
+    area.toLowerCase().includes('locales') ||
+    area.toLowerCase().includes('x &')
+  ) || userData?.name?.toLowerCase().includes('trini') || userData?.name?.toLowerCase().includes('vicky');
 
   useEffect(() => {
     const start = startOfMonth(currentDate);
@@ -84,11 +99,25 @@ const Redes = () => {
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getContenidosForDate = (date) => {
-    return contenidos.filter(c => {
-      const cDate = c.fecha.toDate ? c.fecha.toDate() : new Date(c.fecha);
-      return format(cDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
-    });
+    return contenidos
+      .filter(c => {
+        const cDate = c.fecha.toDate ? c.fecha.toDate() : new Date(c.fecha);
+        return format(cDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+      })
+      .sort((a, b) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt || 0);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt || 0);
+        return aTime - bTime;
+      });
   };
+
+  // Contenidos vencidos (fecha pasada y no publicados/cerrados)
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const contenidosVencidos = contenidos.filter(c => {
+    const cDate = c.fecha?.toDate ? c.fecha.toDate() : new Date(c.fecha);
+    return cDate < hoy && !['cerrado', 'publicado_parcial'].includes(c.estado);
+  });
 
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
@@ -112,6 +141,37 @@ const Redes = () => {
         )}
       </div>
 
+      {/* Alerta de contenidos no publicados */}
+      {contenidosVencidos.length > 0 && (
+        <div className="redes-alerta-vencidos">
+          <div className="alerta-header">
+            <FiAlertTriangle />
+            <strong>
+              {contenidosVencidos.length} contenido{contenidosVencidos.length > 1 ? 's' : ''} sin publicar / sin marcar como publicado
+            </strong>
+          </div>
+          <div className="alerta-lista">
+            {contenidosVencidos.map(c => {
+              const cDate = c.fecha?.toDate ? c.fecha.toDate() : new Date(c.fecha);
+              return (
+                <div
+                  key={c.id}
+                  className="alerta-item"
+                  onClick={() => {
+                    setEditingContenido(c);
+                    setShowModal(true);
+                  }}
+                >
+                  <span className="alerta-fecha">{format(cDate, 'd MMM', { locale: es })}</span>
+                  <span className="alerta-idea">{c.idea}</span>
+                  <span className="alerta-estado">{getEstadoLabel(c.estado)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="calendar-controls">
         <button className="btn-nav" onClick={prevMonth}>
           <FiChevronLeft />
@@ -124,52 +184,53 @@ const Redes = () => {
         </button>
       </div>
 
-      <div className="calendar-scroll-wrapper">
-      <div className="calendar-grid">
-        {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
-          <div key={day} className="calendar-header-day">
-            {day}
-          </div>
-        ))}
+      <div className="calendar-wrapper">
+        <div className="calendar-header-row">
+          {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
+            <div key={day} className="calendar-header-day">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="calendar-days-grid">
+          {/* Espacios vacíos al inicio */}
+          {Array.from({ length: monthStart.getDay() }).map((_, i) => (
+            <div key={`empty-${i}`} className="calendar-day empty"></div>
+          ))}
 
-        {/* Espacios vacíos al inicio */}
-        {Array.from({ length: monthStart.getDay() }).map((_, i) => (
-          <div key={`empty-${i}`} className="calendar-day empty"></div>
-        ))}
+          {/* Días del mes */}
+          {daysInMonth.map(date => {
+            const dayContenidos = getContenidosForDate(date);
+            const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
 
-        {/* Días del mes */}
-        {daysInMonth.map(date => {
-          const dayContenidos = getContenidosForDate(date);
-          const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-          
-          return (
-            <motion.div
-              key={date.toString()}
-              className={`calendar-day ${isToday ? 'today' : ''}`}
-              whileHover={{ scale: 1.02 }}
-              onClick={() => {
-                setSelectedDate(date);
-                setShowModal(true);
-              }}
-            >
-              <div className="day-number">{format(date, 'd')}</div>
-              <div className="day-contenidos">
-                {dayContenidos.map(contenido => (
-                  <ContenidoItem 
-                    key={contenido.id} 
-                    contenido={contenido}
-                    canales={canales}
-                    onEdit={(cont) => {
-                      setEditingContenido(cont);
-                      setShowModal(true);
-                    }}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+            return (
+              <motion.div
+                key={date.toString()}
+                className={`calendar-day ${isToday ? 'today' : ''}`}
+                whileHover={{ scale: 1.01 }}
+                onClick={() => {
+                  setSelectedDate(date);
+                  setShowModal(true);
+                }}
+              >
+                <div className="day-number">{format(date, 'd')}</div>
+                <div className="day-contenidos">
+                  {dayContenidos.map(contenido => (
+                    <ContenidoItem
+                      key={contenido.id}
+                      contenido={contenido}
+                      canales={canales}
+                      onEdit={(cont) => {
+                        setEditingContenido(cont);
+                        setShowModal(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -192,10 +253,10 @@ const Redes = () => {
 };
 
 const ContenidoItem = ({ contenido, canales, onEdit }) => {
-  const { isAdmin, isCoordinator } = useAuth();
-  const canEditItem = isAdmin || isCoordinator;
-  const canOpenModal = true; // Todos pueden abrir el modal
-  
+  const { isAdmin, isManager, isCoordinator } = useAuth();
+  const canEditItem = (isAdmin || isCoordinator) && !isManager;
+  const canOpenModal = !isManager; // Todos menos manager pueden abrir modal
+
   const getEstadoColor = () => {
     switch(contenido.estado) {
       case 'cerrado': return '#10b981';
@@ -220,7 +281,7 @@ const ContenidoItem = ({ contenido, canales, onEdit }) => {
   };
 
   return (
-    <div 
+    <div
       className="contenido-item"
       style={{ borderLeftColor: getEstadoColor(), cursor: canOpenModal ? 'pointer' : 'default' }}
       onClick={(e) => {
@@ -266,10 +327,8 @@ const ContenidoItem = ({ contenido, canales, onEdit }) => {
 };
 
 const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido }) => {
-  const { userData, isAdmin, isCoordinator, roleType } = useAuth();
-  const canEditFull = isAdmin || isCoordinator;
-  const esDiseño    = roleType === 'diseno';
-  const esCommunity = roleType === 'community';
+  const { userData, isAdmin, isCoordinator } = useAuth();
+  const canManage = isAdmin || isCoordinator;
   const [formData, setFormData] = useState(contenido ? {
     ...contenido,
     fecha: contenido.fecha ? formatDateForInput(contenido.fecha) : '',
@@ -291,6 +350,24 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
     emailEnviado: false
   });
   const [loading, setLoading] = useState(false);
+
+  // Determinar rol del usuario
+  const esDiseño = userData?.areas?.some(area =>
+    area.toLowerCase().includes('diseño') ||
+    area.toLowerCase().includes('video') ||
+    area.toLowerCase().includes('juli')
+  );
+
+  const esCommunity = userData?.areas?.some(area =>
+    area.toLowerCase().includes('social') ||
+    area.toLowerCase().includes('contenido') ||
+    area.toLowerCase().includes('community') ||
+    area.toLowerCase().includes('vicky') ||
+    area.toLowerCase().includes('trini') ||
+    area.toLowerCase().includes('email marketing') ||
+    area.toLowerCase().includes('locales') ||
+    area.toLowerCase().includes('x &')
+  ) || userData?.name?.toLowerCase().includes('trini') || userData?.name?.toLowerCase().includes('vicky');
 
   const handleCanalToggle = (canal) => {
     setFormData(prev => ({
@@ -320,7 +397,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
           if (canalInfo.requiresLink && !pub.link) return false;
           return pub.publicado;
         });
-        
+
         if (publicacionesCompletas) {
           estadoAutomatico = 'cerrado';
         } else if (Object.keys(formData.publicaciones).some(c => formData.publicaciones[c]?.publicado)) {
@@ -386,7 +463,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
           {/* SECCIÓN 1: DATOS PRINCIPALES (Solo Admin) */}
           <div className="form-section">
             <h3>Información del Contenido</h3>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label>Fecha de Publicación *</label>
@@ -395,7 +472,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                   value={formData.fecha}
                   onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
                   required
-                  disabled={!canEditFull && contenido}
+                  disabled={!canManage && contenido}
                 />
                 <small>Fecha de carga: {formData.fecha ? new Date(parseLocalDate(formData.fecha).getTime() - 86400000).toLocaleDateString('es-AR') : '-'}</small>
               </div>
@@ -406,7 +483,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                   value={formData.foco}
                   onChange={(e) => setFormData({ ...formData, foco: e.target.value })}
                   required
-                  disabled={!canEditFull && contenido}
+                  disabled={!canManage && contenido}
                 >
                   {focos.map(foco => (
                     <option key={foco} value={foco}>{foco}</option>
@@ -423,7 +500,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                 required
                 rows="2"
                 placeholder="Descripción del contenido..."
-                disabled={!canEditFull && contenido}
+                disabled={!canManage && contenido}
               />
             </div>
 
@@ -434,20 +511,20 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                 value={formData.inspo}
                 onChange={(e) => setFormData({ ...formData, inspo: e.target.value })}
                 placeholder="Link de inspiración o referencia..."
-                disabled={!canEditFull && contenido}
+                disabled={!canManage && contenido}
               />
             </div>
 
             <div className="form-group">
-              <label>Canales * {!canEditFull && contenido && '(solo lectura)'}</label>
+              <label>Canales * {!canManage && contenido && '(solo lectura)'}</label>
               <div className="canales-grid">
                 {canales.map(canal => (
                   <button
                     key={canal.value}
                     type="button"
                     className={`canal-button ${formData.canales.includes(canal.value) ? 'active' : ''}`}
-                    onClick={() => !(!canEditFull && contenido) && handleCanalToggle(canal.value)}
-                    disabled={!canEditFull && contenido}
+                    onClick={() => !(!canManage && contenido) && handleCanalToggle(canal.value)}
+                    disabled={!canManage && contenido}
                   >
                     <canal.icon />
                     <span>{canal.label}</span>
@@ -464,13 +541,13 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                 onChange={(e) => setFormData({ ...formData, aclaraciones: e.target.value })}
                 rows="2"
                 placeholder="Detalles adicionales..."
-                disabled={!canEditFull && contenido}
+                disabled={!canManage && contenido}
               />
             </div>
           </div>
 
-          {/* SECCIÓN 2: DISEÑO */}
-          {(esDiseño || esCommunity || canEditFull) && contenido && (
+          {/* SECCIÓN 2: DISEÑO (Juli) */}
+          {(esDiseño || esCommunity || canManage) && contenido && (
             <div className="form-section diseno-section">
               <h3>📐 Diseño y Contenido</h3>
 
@@ -481,9 +558,9 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                   value={formData.archivosDiseno}
                   onChange={(e) => setFormData({ ...formData, archivosDiseno: e.target.value })}
                   placeholder="Link a Drive, Dropbox, etc..."
-                  disabled={!esDiseño && !canEditFull}
+                  disabled={!esDiseño && !canManage}
                 />
-                {esCommunity && !esDiseño && !canEditFull && (
+                {esCommunity && !esDiseño && !isAdmin && (
                   <small style={{color: '#666', fontSize: '12px'}}>Solo lectura - Editado por Diseño</small>
                 )}
               </div>
@@ -494,12 +571,12 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                     type="checkbox"
                     checked={formData.contenidoListo}
                     onChange={(e) => setFormData({ ...formData, contenidoListo: e.target.checked })}
-                    disabled={!esDiseño && !canEditFull}
+                    disabled={!esDiseño && !canManage}
                   />
                   <FiCheck /> <strong>Contenido listo para publicar</strong>
                 </label>
-                {esDiseño || canEditFull ? (
-                  <small>⚠️ Hasta que no marques esto, Community no puede publicar</small>
+                {esDiseño || canManage ? (
+                  <small>⚠️ Hasta que no marques esto, Vicky y Trini no pueden publicar</small>
                 ) : (
                   <small style={{color: formData.contenidoListo ? '#10b981' : '#f59e0b'}}>
                     {formData.contenidoListo ? '✓ Contenido disponible para publicar' : '⏳ Esperando aprobación de Diseño'}
@@ -509,14 +586,14 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
             </div>
           )}
 
-          {/* SECCIÓN 3: PUBLICACIÓN */}
-          {(esCommunity || canEditFull) && contenido && (
+          {/* SECCIÓN 3: PUBLICACIÓN (Vicky/Trini) */}
+          {(esCommunity || canManage) && contenido && (
             <div className="form-section publicacion-section">
               <h3>📱 Publicación por Canal</h3>
-              
-              {!formData.contenidoListo && !canEditFull && esCommunity && (
+
+              {!formData.contenidoListo && !canManage && esCommunity && (
                 <div className="alert-warning">
-                  ⏳ Nota: Algunas opciones están bloqueadas hasta que Diseño marque "Contenido listo". 
+                  ⏳ Nota: Algunas opciones están bloqueadas hasta que Diseño marque "Contenido listo".
                   Puedes marcar Email Marketing como enviado si ya lo hiciste.
                 </div>
               )}
@@ -524,7 +601,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
               {formData.canales.map(canalValue => {
                 const canalInfo = canales.find(c => c.value === canalValue);
                 const pub = formData.publicaciones[canalValue] || { publicado: false, link: '' };
-                const bloqueado = !formData.contenidoListo && !canEditFull;
+                const bloqueado = !formData.contenidoListo && !canManage;
 
                 return (
                   <div key={canalValue} className="canal-publicacion-item">
@@ -532,7 +609,7 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
                       <canalInfo.icon />
                       <strong>{canalInfo.label}</strong>
                     </div>
-                    
+
                     <div className="canal-publicacion-controls">
                       <label className="checkbox-label">
                         <input
@@ -596,9 +673,9 @@ const NuevoContenidoModal = ({ onClose, focos, canales, selectedDate, contenido 
           )}
 
           <div className="modal-actions">
-            {canEditFull && contenido && (
-              <button 
-                type="button" 
+            {canManage && contenido && (
+              <button
+                type="button"
                 className="btn-danger"
                 onClick={async () => {
                   if (window.confirm('¿Estás segura de eliminar este contenido? No se puede deshacer.')) {

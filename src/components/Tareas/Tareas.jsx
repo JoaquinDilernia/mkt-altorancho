@@ -84,9 +84,9 @@ const Tareas = () => {
           id: doc.id,
           ...doc.data()
         }));
-        // Coordinador: solo ve los usuarios de su área
+        // Coordinador: solo ve los usuarios de su área (comparación sin distinción de mayúsculas)
         if (isCoordinator && area) {
-          usersData = usersData.filter(u => u.area === area);
+          usersData = usersData.filter(u => u.area?.toLowerCase() === area.toLowerCase());
         }
         setUsuarios(usersData);
       });
@@ -95,7 +95,7 @@ const Tareas = () => {
   }, [canManage, isCoordinator, area]);
 
   const areaUserIds = isCoordinator && area
-    ? new Set(usuarios.filter(u => u.area === area).map(u => u.id))
+    ? new Set(usuarios.filter(u => u.area?.toLowerCase() === area.toLowerCase()).map(u => u.id))
     : null;
 
   const filteredTareas = tareas.filter(tarea => {
@@ -521,7 +521,7 @@ const NuevaTareaModal = ({ onClose, estados, urgencias, tarea }) => {
         (snapshot) => {
           let users = snapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(u => u.roleType !== 'superadmin');
+            .filter(u => u.roleType !== 'superadmin' || (tarea && u.id === tarea.asignadoId));
           // Coordinador: solo asigna a su área
           if (isCoordinator && area) {
             users = users.filter(u => u.area === area);

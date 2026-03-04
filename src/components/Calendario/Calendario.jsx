@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { parseLocalDateTime, formatDateForInput, formatTimeForInput } from '../../utils/dateUtils';
 import { notificarParticipantes } from '../../utils/notificaciones';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FiPlus, 
+import {
+  FiPlus,
   FiCalendar,
   FiClock,
   FiUsers,
@@ -16,7 +16,15 @@ import {
   FiStar,
   FiBriefcase,
   FiCamera,
-  FiTrash2
+  FiTrash2,
+  FiInfo,
+  FiTag,
+  FiMap,
+  FiHome,
+  FiKey,
+  FiPackage,
+  FiShoppingCart,
+  FiZap
 } from 'react-icons/fi';
 import { 
   format, 
@@ -57,13 +65,16 @@ const Calendario = () => {
   const canEdit = !isManager; // Manager solo puede ver
 
   const tiposEvento = [
-    { value: 'reunion', label: 'Reunión', icon: FiUsers, color: '#3b82f6' },
-    { value: 'accion', label: 'Acción', icon: FiBriefcase, color: '#8b5cf6' },
-    { value: 'evento', label: 'Evento', icon: FiStar, color: '#f59e0b' },
-    { value: 'produccion', label: 'Producción', icon: FiCamera, color: '#ec4899' },
-    { value: 'cumpleaños', label: 'Cumpleaños', icon: FiStar, color: '#10b981' },
-    { value: 'vacaciones', label: 'Vacaciones', icon: FiCoffee, color: '#06b6d4' },
-    { value: 'trabajo', label: 'Espacio de Trabajo', icon: FiBriefcase, color: '#6366f1' }
+    { value: 'accion',           label: 'Acción',             icon: FiBriefcase,    color: '#8b5cf6' },
+    { value: 'evento',           label: 'Eventos',            icon: FiStar,         color: '#f59e0b' },
+    { value: 'lanzamiento',      label: 'Lanzamientos',       icon: FiZap,          color: '#ef4444' },
+    { value: 'importacion',      label: 'Importaciones',      icon: FiPackage,      color: '#3b82f6' },
+    { value: 'vacaciones',       label: 'Vacaciones',         icon: FiCoffee,       color: '#06b6d4' },
+    { value: 'fecha_comercial',  label: 'Fecha comercial',    icon: FiTag,          color: '#ec4899' },
+    { value: 'evento_comercial', label: 'Evento comercial',   icon: FiShoppingCart, color: '#f97316' },
+    { value: 'feria',            label: 'Ferias',             icon: FiMap,          color: '#10b981' },
+    { value: 'nuevo_local',      label: 'Nuevos locales',     icon: FiHome,         color: '#6366f1' },
+    { value: 'apertura',         label: 'Aperturas',          icon: FiKey,          color: '#462829' },
   ];
 
   useEffect(() => {
@@ -171,6 +182,12 @@ const Calendario = () => {
             <FiPlus /> Nuevo Evento
           </motion.button>
         </div>
+      </div>
+
+      {/* AVISO: Solo acciones estratégicas */}
+      <div className="calendario-estrategico-notice">
+        <FiInfo />
+        <span>En este calendario solo se cargan <strong>acciones estratégicas</strong>. Las reuniones se registran en la sección Reuniones.</span>
       </div>
 
       {/* VISTA SEMANAL */}
@@ -459,7 +476,7 @@ const NuevoEventoModal = ({ onClose, tiposEvento, selectedDate, evento, puedeEdi
     participantes: evento.participantes || []
   } : {
     titulo: '',
-    tipo: 'reunion',
+    tipo: 'accion',
     fechaInicio: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
     fechaFin: '',
     hora: '',

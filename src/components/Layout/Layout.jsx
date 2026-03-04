@@ -90,12 +90,12 @@ const Layout = () => {
     { path: '/metricas',   icon: FiBarChart2,   label: 'Métricas',          access: 'metricas' },
 
     { separator: true, label: 'Marketing' },
-    { path: '/redes',      icon: FiInstagram,   label: 'Calendario Redes',  access: 'redes',    area: 'marketing' },
-    { path: '/pauta',      icon: FiRadio,       label: 'Pauta',             access: 'pauta',    area: 'marketing' },
-    { path: '/visual',     icon: FiCamera,      label: 'Visual',            access: 'visual',   area: 'marketing' },
+    { path: '/redes',      icon: FiInstagram,   label: 'Calendario Redes',  access: 'redes',    areas: ['marketing'] },
+    { path: '/pauta',      icon: FiRadio,       label: 'Pauta',             access: 'pauta',    areas: ['marketing'] },
+    { path: '/visual',     icon: FiCamera,      label: 'Visual',            access: 'visual',   areas: ['marketing', 'producto'] },
 
     { separator: true, label: 'Producto' },
-    { path: '/producto',   icon: FiPackage,     label: 'Producto',          access: 'producto', area: 'producto' },
+    { path: '/producto',   icon: FiPackage,     label: 'Producto',          access: 'producto', areas: ['producto', 'marketing'] },
 
     { separator: true, label: 'Admin' },
     { path: '/usuarios',   icon: FiUsers,       label: 'Usuarios',          access: 'admin' },
@@ -109,7 +109,7 @@ const Layout = () => {
     if (item.access === 'admin') return roleType === 'coordinador';
     if (item.access === 'all') return true;
     if (roleType === 'coordinador' || roleType === 'directivo') {
-      if (item.area && item.area !== area) return false;
+      if (item.areas && !item.areas.includes(area)) return false;
       return true;
     }
     return userSecciones.includes(item.access);

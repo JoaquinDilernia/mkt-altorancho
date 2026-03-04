@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { motion } from 'framer-motion';
-import { FiCalendar, FiCheckSquare, FiInstagram, FiTrendingUp, FiClock, FiAlertTriangle, FiVideo } from 'react-icons/fi';
+import { FiCalendar, FiCheckSquare, FiInstagram, FiTrendingUp, FiClock, FiAlertTriangle, FiVideo, FiArrowRight } from 'react-icons/fi';
 import { format, isSameDay, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import './Home.css';
@@ -13,6 +14,13 @@ const toDateStr = (d) => {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+};
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 13) return 'Buenos días';
+  if (hour < 20) return 'Buenas tardes';
+  return 'Buenas noches';
 };
 
 const Home = () => {
@@ -83,14 +91,14 @@ const Home = () => {
       setLoading(false);
     });
 
-    // Reuniones de esta semana donde soy participante
+    // Reuniones próximas donde soy participante
     const hoyStr = toDateStr(hoy);
-    const en7Dias = toDateStr(addDays(hoy, 7));
+    const en14Dias = toDateStr(addDays(hoy, 14));
     const reunionesQuery = query(
       collection(db, 'marketingar_reuniones'),
-      where('dateStr', '>=', hoyStr),
-      where('dateStr', '<=', en7Dias),
-      orderBy('dateStr', 'asc')
+      where('fecha', '>=', hoyStr),
+      where('fecha', '<=', en14Dias),
+      orderBy('fecha', 'asc')
     );
     const unsubReuniones = onSnapshot(reunionesQuery, (snapshot) => {
       const todas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -173,13 +181,13 @@ const Home = () => {
 
   return (
     <div className="home">
-      <motion.div 
+      <motion.div
         className="welcome-section"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1>Hola, {userData?.name}! 👋</h1>
+        <h1>{getGreeting()}, {userData?.name}!</h1>
         <p className="welcome-subtitle">
           {canManage
             ? 'Panel de administración del equipo'
@@ -213,6 +221,70 @@ const Home = () => {
           );
         })}
       </div>
+
+      {/* REUNIONES — primero y siempre visible */}
+      <motion.section
+        className="reuniones-destacadas"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+      >
+        <div className="reuniones-destacadas-header">
+          <div className="reuniones-header-icon"><FiVideo /></div>
+          <div>
+            <h2>Mis Reuniones</h2>
+            <span>Próximos 14 días</span>
+          </div>
+          <Link to="/reuniones" className="reuniones-ver-todas">
+            Ver calendario <FiArrowRight />
+          </Link>
+        </div>
+        {misReuniones.length === 0 ? (
+          <div className="reuniones-empty">
+            <FiVideo />
+            <p>No tenés reuniones programadas en los próximos 14 días</p>
+          </div>
+        ) : (
+          <div className="reuniones-destacadas-list">
+            {misReuniones.map(r => {
+              if (!r.fecha) return null;
+              const [yy, mm, dd] = r.fecha.split('-').map(Number);
+              const fecha = new Date(yy, mm - 1, dd);
+              const esHoy = isSameDay(fecha, new Date());
+              const esMañana = isSameDay(fecha, addDays(new Date(), 1));
+              const diasRestantes = Math.ceil((fecha - new Date()) / (1000 * 60 * 60 * 24));
+              return (
+                <div key={r.id} className={`reunion-destacada-item${esHoy ? ' hoy' : ''}`}>
+                  <div className="reunion-fecha-badge">
+                    <div className="reunion-dia">{format(fecha, 'd')}</div>
+                    <div className="reunion-mes">{format(fecha, 'MMM', { locale: es })}</div>
+                    <div className="reunion-dow">{format(fecha, 'EEE', { locale: es })}</div>
+                  </div>
+                  <div className="reunion-info">
+                    <div className="reunion-titulo">{r.titulo}</div>
+                    <div className="reunion-horario">
+                      <FiClock /> {r.horaInicio} – {r.horaFin}
+                    </div>
+                    {r.tipo && <span className="reunion-tipo">{r.tipo}</span>}
+                  </div>
+                  <div className="reunion-actions">
+                    {esHoy && <span className="reunion-hoy-badge">HOY</span>}
+                    {!esHoy && esMañana && <span className="reunion-pronto-badge">MAÑANA</span>}
+                    {!esHoy && !esMañana && diasRestantes <= 3 && (
+                      <span className="reunion-pronto-badge">En {diasRestantes} día{diasRestantes !== 1 ? 's' : ''}</span>
+                    )}
+                    {r.linkMeet && (
+                      <a href={r.linkMeet} target="_blank" rel="noreferrer" className="btn-unirse">
+                        Unirse
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.section>
 
       {eventosMencionado.length > 0 && (
         <motion.div
@@ -300,7 +372,7 @@ const Home = () => {
 
       <div className="dashboard-sections">
         {!isManager && (
-          <motion.section 
+          <motion.section
             className="dashboard-card"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -387,48 +459,6 @@ const Home = () => {
             )}
           </div>
         </motion.section>
-
-        {misReuniones.length > 0 && (
-          <motion.section
-            className="dashboard-card"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h2>
-              <FiVideo /> Mis Reuniones (próximos 7 días)
-            </h2>
-            <div className="eventos-list">
-              {misReuniones.map(r => {
-                const esCadena = typeof r.dateStr === 'string' && r.dateStr.length === 10;
-                const [yy, mm, dd] = esCadena ? r.dateStr.split('-').map(Number) : [null, null, null];
-                const fecha = esCadena ? new Date(yy, mm - 1, dd) : null;
-                const esHoy = fecha ? isSameDay(fecha, new Date()) : false;
-                return (
-                  <div key={r.id} className={`evento-item${esHoy ? ' hoy' : ''}`}>
-                    {fecha && (
-                      <div className="evento-fecha">
-                        <div className="evento-dia">{format(fecha, 'd')}</div>
-                        <div className="evento-mes">{format(fecha, 'MMM', { locale: es })}</div>
-                      </div>
-                    )}
-                    <div className="evento-info">
-                      <div className="evento-titulo">{r.titulo}</div>
-                      <div className="evento-hora">
-                        <FiClock /> {r.horaInicio} – {r.horaFin}
-                      </div>
-                      {r.linkMeet && (
-                        <a href={r.linkMeet} target="_blank" rel="noreferrer" className="reunion-link">
-                          Unirse a la reunión
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.section>
-        )}
       </div>
     </div>
   );
