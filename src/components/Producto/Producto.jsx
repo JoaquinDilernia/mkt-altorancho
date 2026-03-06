@@ -258,28 +258,6 @@ const Producto = ({ initialTab = 'catalogo' }) => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="producto-tabs">
-        <button
-          className={`producto-tab ${tab === 'catalogo' ? 'active' : ''}`}
-          onClick={() => setTab('catalogo')}
-        >
-          Catálogo
-        </button>
-        <button
-          className={`producto-tab ${tab === 'calendario' ? 'active' : ''}`}
-          onClick={() => setTab('calendario')}
-        >
-          Calendario de producto
-        </button>
-        <button
-          className={`producto-tab ${tab === 'colecciones' ? 'active' : ''}`}
-          onClick={() => setTab('colecciones')}
-        >
-          Colecciones
-        </button>
-      </div>
-
       {/* ── CATÁLOGO ──────────────────────────────────────────────────────── */}
       {tab === 'catalogo' && (
         <div className="tab-section">
