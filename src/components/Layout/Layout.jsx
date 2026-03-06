@@ -100,7 +100,7 @@ const Layout = () => {
 
     { separator: true, label: 'Producto' },
     { path: '/producto',            icon: FiPackage,  label: 'Catálogo',            access: 'all' },
-    { path: '/calendario-producto', icon: FiCalendar, label: 'Calendario Producto', access: 'all', areas: ['producto', 'locales'] },
+    { path: '/calendario-producto', icon: FiCalendar, label: 'Calendario Producto', access: 'all', areas: ['producto'] },
     { path: '/colecciones',         icon: FiFile,     label: 'Colecciones',         access: 'all' },
 
     { separator: true, label: 'Admin' },
