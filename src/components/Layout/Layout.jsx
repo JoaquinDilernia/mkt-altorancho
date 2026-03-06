@@ -100,7 +100,7 @@ const Layout = () => {
 
     { separator: true, label: 'Producto' },
     { path: '/producto',            icon: FiPackage,  label: 'Catálogo',            access: 'all' },
-    { path: '/calendario-producto', icon: FiCalendar, label: 'Calendario Producto', access: 'producto', areas: ['producto'] },
+    { path: '/calendario-producto', icon: FiCalendar, label: 'Calendario Producto', access: 'all', areas: ['producto', 'locales'] },
     { path: '/colecciones',         icon: FiFile,     label: 'Colecciones',         access: 'all' },
 
     { separator: true, label: 'Admin' },
@@ -113,11 +113,10 @@ const Layout = () => {
     if (roleType === 'superadmin') return true;
     if (item.access === 'superadmin_only') return false;
     if (item.access === 'admin') return roleType === 'coordinador';
+    // Si el ítem restringe áreas, verificar antes del bypass 'all'
+    if (item.areas && !item.areas.includes(area)) return false;
     if (item.access === 'all') return true;
-    if (roleType === 'coordinador' || roleType === 'directivo') {
-      if (item.areas && !item.areas.includes(area)) return false;
-      return true;
-    }
+    if (roleType === 'coordinador' || roleType === 'directivo') return true;
     return userSecciones.includes(item.access);
   };
 
