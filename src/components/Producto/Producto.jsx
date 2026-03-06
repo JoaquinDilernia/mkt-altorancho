@@ -59,9 +59,9 @@ function obsStyle(obs) {
   return { background: '#f3f4f6', color: '#555' };
 }
 
-const Producto = () => {
-  const { userData, isAdmin, isCoordinator, area } = useAuth();
-  const [tab, setTab] = useState('catalogo');
+const Producto = ({ initialTab = 'catalogo' }) => {
+  const { userData, isAdmin, area } = useAuth();
+  const [tab, setTab] = useState(initialTab);
 
   // ── Catálogo ───────────────────────────────────────────────────────────────
   const [productos, setProductos] = useState([]);
@@ -83,7 +83,7 @@ const Producto = () => {
   const [loadingColecciones, setLoadingColecciones] = useState(true);
   const [showColModal, setShowColModal] = useState(false);
 
-  const canEdit   = isAdmin || isCoordinator || area === 'producto';
+  const canEdit   = isAdmin || area === 'producto';
   const canUpload = isAdmin || area === 'producto';
 
   useEffect(() => {
@@ -629,7 +629,10 @@ const CalendarioModal = ({ editingItem, onClose, onSave }) => {
     e.preventDefault();
     setSaving(true);
     const data = { ...form };
-    if (data.fechaEvento) data.fechaEvento = new Date(data.fechaEvento);
+    if (data.fechaEvento) {
+      const [y, m, d] = data.fechaEvento.split('-').map(Number);
+      data.fechaEvento = new Date(y, m - 1, d);
+    }
     await onSave(data);
     setSaving(false);
   };

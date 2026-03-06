@@ -57,7 +57,9 @@ function App() {
             <Route path="objetivos" element={<Objetivos />} />
             <Route path="metricas" element={<Metricas />} />
             <Route path="pauta" element={<Pauta />} />
-            <Route path="producto" element={<Producto />} />
+            <Route path="producto" element={<Producto initialTab="catalogo" />} />
+            <Route path="calendario-producto" element={<Producto initialTab="calendario" />} />
+            <Route path="colecciones" element={<Producto initialTab="colecciones" />} />
             <Route path="visual" element={<Visual />} />
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="perfil" element={<Perfil />} />

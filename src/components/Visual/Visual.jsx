@@ -494,6 +494,7 @@ const FotosGrid = ({ fotos }) => {
 // ── Lightbox ──────────────────────────────────────────────────────────────────
 const Lightbox = ({ fotos, initialIndex, onClose }) => {
   const [idx, setIdx] = useState(initialIndex);
+  const touchStartX = useRef(null);
   const canPrev = idx > 0;
   const canNext = idx < fotos.length - 1;
 
@@ -506,6 +507,18 @@ const Lightbox = ({ fotos, initialIndex, onClose }) => {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [idx, fotos.length, onClose]);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (diff > 50 && canNext) setIdx(i => i + 1);
+    if (diff < -50 && canPrev) setIdx(i => i - 1);
+    touchStartX.current = null;
+  };
 
   return (
     <motion.div
@@ -524,15 +537,20 @@ const Lightbox = ({ fotos, initialIndex, onClose }) => {
           </button>
         </div>
       </div>
-      <div className="lightbox-stage" onClick={e => e.stopPropagation()}>
+      <div
+        className="lightbox-stage"
+        onClick={e => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {canPrev && (
-          <button className="lightbox-nav prev" onClick={() => setIdx(i => i - 1)}>
+          <button className="lightbox-nav prev" onClick={(e) => { e.stopPropagation(); setIdx(i => i - 1); }}>
             <FiChevronLeft size={22} />
           </button>
         )}
         <img src={fotos[idx]} alt={`Foto ${idx + 1}`} className="lightbox-img" />
         {canNext && (
-          <button className="lightbox-nav next" onClick={() => setIdx(i => i + 1)}>
+          <button className="lightbox-nav next" onClick={(e) => { e.stopPropagation(); setIdx(i => i + 1); }}>
             <FiChevronRight size={22} />
           </button>
         )}
@@ -566,7 +584,8 @@ const VisualModal = ({ type, editingItem, onClose, onSave }) => {
     try {
       const data = { ...form };
       if (type === 'visita' && data.fechaVisita) {
-        data.fechaVisita = new Date(data.fechaVisita);
+        const [y, m, d] = data.fechaVisita.split('-').map(Number);
+        data.fechaVisita = new Date(y, m - 1, d);
       }
       // Upload all new files in parallel
       if (fotoFiles.length > 0) {

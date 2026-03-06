@@ -20,6 +20,7 @@ import {
   FiMapPin,
   FiVideo,
   FiBell,
+  FiFile,
 } from 'react-icons/fi';
 import { ROLE_LABELS, AREA_LABELS } from '../../utils/roles';
 import './Layout.css';
@@ -34,6 +35,7 @@ const Layout = () => {
 
   // ── Notificaciones ──────────────────────────────────────────────────────────
   const [notifs, setNotifs] = useState([]);
+  const [historial, setHistorial] = useState([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const notifsRef = useRef(null);
 
@@ -41,11 +43,13 @@ const Layout = () => {
     if (!userData?.name) return;
     const q = query(
       collection(db, 'marketingar_notificaciones'),
-      where('userName', '==', userData.name),
-      where('leido', '==', false)
+      where('userName', '==', userData.name)
     );
     const unsub = onSnapshot(q, (snap) => {
-      setNotifs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setNotifs(all.filter(n => !n.leido));
+      all.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setHistorial(all.slice(0, 30));
     });
     return unsub;
   }, [userData?.name]);
@@ -92,10 +96,12 @@ const Layout = () => {
     { separator: true, label: 'Marketing' },
     { path: '/redes',      icon: FiInstagram,   label: 'Calendario Redes',  access: 'redes',    areas: ['marketing'] },
     { path: '/pauta',      icon: FiRadio,       label: 'Pauta',             access: 'pauta',    areas: ['marketing'] },
-    { path: '/visual',     icon: FiCamera,      label: 'Visual',            access: 'visual',   areas: ['marketing', 'producto'] },
+    { path: '/visual',     icon: FiCamera,      label: 'Visual',            access: 'visual',   areas: ['marketing', 'producto', 'locales'] },
 
     { separator: true, label: 'Producto' },
-    { path: '/producto',   icon: FiPackage,     label: 'Producto',          access: 'producto', areas: ['producto', 'marketing'] },
+    { path: '/producto',            icon: FiPackage,  label: 'Catálogo',            access: 'all' },
+    { path: '/calendario-producto', icon: FiCalendar, label: 'Calendario Producto', access: 'all' },
+    { path: '/colecciones',         icon: FiFile,     label: 'Colecciones',         access: 'all' },
 
     { separator: true, label: 'Admin' },
     { path: '/usuarios',   icon: FiUsers,       label: 'Usuarios',          access: 'admin' },
@@ -208,13 +214,14 @@ const Layout = () => {
                 <div className="notif-dropdown">
                   <div className="notif-dropdown-header">
                     <span>Notificaciones</span>
+                    {notifs.length > 0 && <span className="notif-header-badge">{notifs.length} nueva{notifs.length !== 1 ? 's' : ''}</span>}
                   </div>
-                  {notifs.length === 0 ? (
-                    <div className="notif-empty">Nada nuevo por ahora</div>
+                  {historial.length === 0 ? (
+                    <div className="notif-empty">Sin notificaciones aún</div>
                   ) : (
                     <div className="notif-list">
-                      {notifs.map(n => (
-                        <div key={n.id} className={`notif-item notif-${n.tipo}`}>
+                      {historial.map(n => (
+                        <div key={n.id} className={`notif-item notif-${n.tipo}${!n.leido ? ' notif-unread' : ''}`}>
                           <div className="notif-titulo">{n.titulo}</div>
                           <div className="notif-mensaje">{n.mensaje}</div>
                         </div>
